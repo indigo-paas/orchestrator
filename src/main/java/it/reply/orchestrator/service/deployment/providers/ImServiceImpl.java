@@ -1027,11 +1027,18 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           executeWithClientForResult(cloudProviderEndpoints, requestedWithToken,
               client -> client.getVmInfo(deployment.getEndpoint(), resource.getIaasId()));
 
-      String state = (String) vmInfo.getVmProperties()
-          .stream()
-          .filter(Objects::nonNull)
-          .filter(properties -> "system".equals(properties.get("class")))
-          .map(properties -> properties.get("state")).findAny().get();
+      Optional<String> tmpState = vmInfo.getVmProperties()
+        .stream()
+        .filter(Objects::nonNull)
+        .filter(properties -> "system".equals(properties.get("class")))
+        .map(properties -> (String) properties.get("state")).findAny();
+
+      String state;
+      if (tmpState.isPresent()){
+        state = tmpState.get();
+      } else {
+        throw new ImClientException("Null pointer exception");
+      }
 
       String action = deploymentMessage.getAction();
       boolean complete = false;

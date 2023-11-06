@@ -292,13 +292,14 @@ public class IamServiceImpl implements IamService {
         return false;
       }
       String errorMessage = String.format(
-          "The delete of the client with client_id %s was unsuccessful. " + "Status code: %s",
+          "The delete of the client with client_id %s was unsuccessful. Status code: %s",
           clientId, e.getStatusCode());
       LOG.error(errorMessage);
       throw new IamServiceException(errorMessage, e);
     } catch (RestClientException e) {
       String errorMessage = String.format(
-          "The delete of the client with client_id %s was unsuccessful. %s", e.getMessage());
+          "The delete of the client with client_id %s was unsuccessful. %s",
+                  clientId, e.getMessage());
       LOG.error(errorMessage);
       throw new IamServiceException(errorMessage, e);
     }
@@ -306,8 +307,8 @@ public class IamServiceImpl implements IamService {
     // Check the response
     if (!HttpStatus.NO_CONTENT.equals(responseEntity.getStatusCode())) {
       String errorMessage = String.format(
-          "The delete of the client with client_id %s was unsuccessful. " + "Status code: %s",
-          clientId, responseEntity.getStatusCode());
+          "The delete of the client with client_id %s was unsuccessful. Status code: %s",
+              clientId, responseEntity.getStatusCode());
       LOG.debug(errorMessage);
       throw new IamServiceException(errorMessage);
     }
@@ -472,7 +473,7 @@ public class IamServiceImpl implements IamService {
       throw new IamServiceException(errorMessage, e);
     } catch (RestClientException e) {
       String errorMessage = String.format(
-          "Obtaining of information about the client with client_id %s " + "was unsuccessful. %s",
+          "Obtaining of information about the client with client_id %s was unsuccessful. %s",
           e.getMessage());
       LOG.error(errorMessage);
       throw new IamServiceException(errorMessage, e);
@@ -512,20 +513,21 @@ public class IamServiceImpl implements IamService {
           restTemplate.exchange(updateUrl, HttpMethod.PUT, requestEntity, String.class);
     } catch (HttpClientErrorException e) {
       String errorMessage = String.format(
-          "The update of the client with client_id %s was unsuccessful. " + "Status code: %s",
+          "The update of the client with client_id %s was unsuccessful. Status code: %s",
           clientId, e.getStatusCode());
       LOG.error(errorMessage);
       throw new IamServiceException(errorMessage, e);
     } catch (RestClientException e) {
       String errorMessage = String.format(
-          "The update of the client with client_id %s was unsuccessful. %s", e.getMessage());
+          "The update of the client with client_id %s was unsuccessful. %s",
+              clientId, e.getMessage());
       LOG.error(errorMessage);
       throw new IamServiceException(errorMessage, e);
     }
     // Check the response
     if (!HttpStatus.OK.equals(responseEntity.getStatusCode())) {
       String errorMessage = String.format(
-          "The update of the client with client_id %s was unsuccessful. " + "Status code: %s",
+          "The update of the client with client_id %s was unsuccessful. Status code: %s",
           clientId, responseEntity.getStatusCode());
       LOG.error(errorMessage);
       throw new IamServiceException(errorMessage);

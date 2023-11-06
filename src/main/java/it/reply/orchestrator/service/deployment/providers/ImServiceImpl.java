@@ -1027,7 +1027,9 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           executeWithClientForResult(cloudProviderEndpoints, requestedWithToken,
               client -> client.getVmInfo(deployment.getEndpoint(), resource.getIaasId()));
 
-      String state = (String) vmInfo.getVmProperties().stream().filter(Objects::nonNull)
+      String state = (String) vmInfo.getVmProperties()
+          .stream()
+          .filter(Objects::nonNull)
           .filter(properties -> "system".equals(properties.get("class")))
           .map(properties -> properties.get("state")).findAny().get();
 

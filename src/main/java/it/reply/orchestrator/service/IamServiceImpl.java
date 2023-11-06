@@ -474,7 +474,7 @@ public class IamServiceImpl implements IamService {
     } catch (RestClientException e) {
       String errorMessage = String.format(
           "Obtaining of information about the client with client_id %s was unsuccessful. %s",
-          e.getMessage());
+          clientId, e.getMessage());
       LOG.error(errorMessage);
       throw new IamServiceException(errorMessage, e);
     }

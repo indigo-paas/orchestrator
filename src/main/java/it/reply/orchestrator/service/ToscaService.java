@@ -278,6 +278,8 @@ public interface ToscaService {
   public ArchiveRoot setDeploymentTags(ArchiveRoot ar, String orchestratorUrl,
       String deplymentId, String userEmail);
 
+  public Map<String, Map<String, String>> getS3Properties(ArchiveRoot ar);
+
   public ArchiveRoot setHybridDeployment(ArchiveRoot ar, String publicNetworkName,
       String privateNetworkName, String privateNetworkCidr);
 

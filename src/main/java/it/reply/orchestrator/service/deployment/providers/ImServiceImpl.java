@@ -18,13 +18,11 @@
 package it.reply.orchestrator.service.deployment.providers;
 
 import alien4cloud.tosca.model.ArchiveRoot;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.MoreCollectors;
 import com.google.common.collect.Multimap;
-
 import es.upv.i3m.grycap.im.InfrastructureManager;
 import es.upv.i3m.grycap.im.exceptions.ImClientErrorException;
 import es.upv.i3m.grycap.im.exceptions.ImClientException;
@@ -66,7 +64,6 @@ import it.reply.orchestrator.utils.JwtUtils;
 import it.reply.orchestrator.utils.OneDataUtils;
 import it.reply.orchestrator.utils.ToscaConstants;
 import it.reply.orchestrator.utils.WorkflowConstants.ErrorCode;
-
 import java.io.IOException;
 import java.net.URI;
 import java.text.ParseException;
@@ -82,17 +79,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import lombok.extern.slf4j.Slf4j;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.Bucket;
-import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
-import software.amazon.awssdk.services.s3.model.DeleteBucketRequest;
-import software.amazon.awssdk.services.s3.model.ListBucketsResponse;
-import software.amazon.awssdk.services.s3.model.S3Exception;
 import org.alien4cloud.tosca.model.templates.NodeTemplate;
 import org.alien4cloud.tosca.model.templates.Topology;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -100,6 +87,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.DeleteBucketRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 @Service
 @DeploymentProviderQualifier(DeploymentProvider.IM)
@@ -740,10 +734,10 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
             LOG.error(e.awsErrorDetails().errorMessage());
             throw e;
           }
-          } else {
-            LOG.info("Found node of type {} but no bucket info is registered in metadata",
-                S3_TOSCA_NODE_TYPE);
-          }
+        } else {
+          LOG.info("Found node of type {} but no bucket info is registered in metadata",
+              S3_TOSCA_NODE_TYPE);
+        }
       }
     }
 

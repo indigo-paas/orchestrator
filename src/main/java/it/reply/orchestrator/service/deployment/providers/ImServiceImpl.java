@@ -93,7 +93,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.DeleteBucketRequest;
-import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 
 @Service
 @DeploymentProviderQualifier(DeploymentProvider.IM)
@@ -140,6 +140,44 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
     DeleteBucketRequest deleteBucketRequest =
         DeleteBucketRequest.builder().bucket(bucketName).build();
     s3.deleteBucket(deleteBucketRequest);
+  }
+
+  private void deleteAllBuckets(Map<Boolean, Set<Resource>> resources) {
+    for (Resource resource : resources.get(false)) {
+      if (resource.getToscaNodeType().equals(S3_TOSCA_NODE_TYPE)) {
+        Map<String, String> resourceMetadata = resource.getMetadata();
+        S3Client s3 = null;
+        if (resourceMetadata != null) {
+
+          // Configure S3 client with credentials
+          try {
+            s3 = S3Client.builder().endpointOverride(URI.create(resourceMetadata.get(S3_URL)))
+                .region(Region.of(AWS_REGION)).forcePathStyle(true)
+                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(
+                    resourceMetadata.get(AWS_ACCESS_KEY), resourceMetadata.get(AWS_SECRET_KEY))))
+                .build();
+          } catch (Exception e) {
+            LOG.error(e.getMessage());
+            throw e;
+          }
+
+          // Delete S3 bucket
+          try {
+            LOG.info("Deleting bucket with name {}", resourceMetadata.get(BUCKET_NAME));
+            deleteBucket(s3, resourceMetadata.get(BUCKET_NAME));
+            LOG.info("Bucket {} successfully deleted", resourceMetadata.get(BUCKET_NAME));
+          } catch (NoSuchBucketException e) {
+            LOG.warn("Bucket {} was not found", resourceMetadata.get(BUCKET_NAME));
+          } catch (Exception e) {
+            LOG.error(e.getMessage());
+            throw e;
+          }
+        } else {
+          LOG.info("Found node of type {} but no bucket info is registered in metadata",
+              S3_TOSCA_NODE_TYPE);
+        }
+      }
+    }
   }
 
   protected <R> R executeWithClientForResult(List<CloudProviderEndpoint> cloudProviderEndpoints,
@@ -261,20 +299,28 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
         String secretKey = s3TemplateInput.get(nodeName).get(AWS_SECRET_KEY);
         String bucketName = uuid + "-" + s3TemplateInput.get(nodeName).get(BUCKET_NAME);
         String endpoint = s3TemplateInput.get(nodeName).get(S3_URL);
+        S3Client s3 = null;
 
         // Configure S3 client with credentials
-        S3Client s3 =
-            S3Client.builder().endpointOverride(URI.create(endpoint)).region(Region.of(AWS_REGION))
-                .forcePathStyle(true).credentialsProvider(StaticCredentialsProvider
-                    .create(AwsBasicCredentials.create(accessKeyId, secretKey)))
-                .build();
+        try {
+          s3 = S3Client.builder().endpointOverride(URI.create(endpoint))
+              .region(Region.of(AWS_REGION)).forcePathStyle(true)
+              .credentialsProvider(StaticCredentialsProvider
+                  .create(AwsBasicCredentials.create(accessKeyId, secretKey)))
+              .build();
+        } catch (Exception e) {
+          LOG.error(e.getMessage());
+          deleteAllBuckets(resources);
+          throw e;
+        }
 
         try {
           // Try to create a bucket
           createBucket(s3, bucketName);
           LOG.info("Bucket successfully created: {}", bucketName);
-        } catch (S3Exception e) {
-          LOG.error(e.awsErrorDetails().errorMessage());
+        } catch (Exception e) {
+          LOG.error(e.getMessage());
+          deleteAllBuckets(resources);
           throw e;
         }
 
@@ -712,34 +758,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
       }
     }
 
-    for (Resource resource : resources.get(false)) {
-      if (resource.getToscaNodeType().equals(S3_TOSCA_NODE_TYPE)) {
-        Map<String, String> resourceMetadata = resource.getMetadata();
-        if (resourceMetadata != null) {
-
-          // Configure S3 client with credentials
-          S3Client s3 =
-              S3Client.builder().endpointOverride(URI.create(resourceMetadata.get(S3_URL)))
-                  .region(Region.of(AWS_REGION)).forcePathStyle(true)
-                  .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(
-                      resourceMetadata.get(AWS_ACCESS_KEY), resourceMetadata.get(AWS_SECRET_KEY))))
-                  .build();
-
-          try {
-            // Try to delete the bucket
-            LOG.info("Deleting bucket with name {}", resourceMetadata.get(BUCKET_NAME));
-            deleteBucket(s3, resourceMetadata.get(BUCKET_NAME));
-            LOG.info("Bucket successfully deleted: {}", resourceMetadata.get(BUCKET_NAME));
-          } catch (S3Exception e) {
-            LOG.error(e.awsErrorDetails().errorMessage());
-            throw e;
-          }
-        } else {
-          LOG.info("Found node of type {} but no bucket info is registered in metadata",
-              S3_TOSCA_NODE_TYPE);
-        }
-      }
-    }
+    deleteAllBuckets(resources);
 
     return true;
   }

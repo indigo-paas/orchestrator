@@ -22,14 +22,17 @@ import it.reply.orchestrator.dal.entity.Deployment;
 import it.reply.orchestrator.dal.entity.OidcEntity;
 import it.reply.orchestrator.dal.entity.OidcTokenId;
 import it.reply.orchestrator.dto.request.DeploymentRequest;
+import it.reply.orchestrator.exception.http.ForbiddenException;
 import it.reply.orchestrator.resource.DeploymentResource;
 import it.reply.orchestrator.resource.DeploymentResourceAssembler;
 import it.reply.orchestrator.service.DeploymentService;
 import it.reply.orchestrator.service.security.OAuth2TokenService;
+import it.reply.orchestrator.utils.JwtUtils;
 import it.reply.orchestrator.utils.MdcUtils;
-
+import java.text.ParseException;
+import java.util.List;
 import javax.validation.Valid;
-
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -52,6 +55,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RestController
 public class DeploymentController {
 
@@ -107,24 +111,48 @@ public class DeploymentController {
   /**
    * Create a deployment.
    *
-   * @param request
-   *          {@link DeploymentRequest}
+   * @param request {@link DeploymentRequest}
    * @return {@link DeploymentResource}
+   * @throws ParseException if the claim value is not of the required type during JWT parsing
+   * @throws ForbiddenException if there is no groups or wlcg groups claim, or the requested group
+   *         is not in the user's allowed groups
    */
   @ResponseStatus(HttpStatus.CREATED)
   @RequestMapping(value = "/deployments", method = RequestMethod.POST,
       produces = MediaType.APPLICATION_JSON_VALUE)
   @PreAuthorize(OFFLINE_ACCESS_REQUIRED_CONDITION)
-  public DeploymentResource createDeployment(@Valid @RequestBody DeploymentRequest request) {
+  public DeploymentResource createDeployment(@Valid @RequestBody DeploymentRequest request)
+      throws ParseException, ForbiddenException {
     OidcEntity owner = null;
     OidcTokenId requestedWithToken = null;
+    String requestedGroup = null;
     if (oidcProperties.isEnabled()) {
       owner = oauth2Tokenservice.getOrGenerateOidcEntityFromCurrentAuth();
       requestedWithToken = oauth2Tokenservice.exchangeCurrentAccessToken();
+      requestedGroup = request.getUserGroup();
+      String accessToken = oauth2Tokenservice.getAccessToken(requestedWithToken);
+      try {
+        List<String> groups =
+            JwtUtils.getJwtClaimsSet(JwtUtils.parseJwt(accessToken)).getStringListClaim("groups");
+        List<String> wlcgGroups = JwtUtils.getJwtClaimsSet(JwtUtils.parseJwt(accessToken))
+            .getStringListClaim("wlcg.groups");
+        if ((groups == null || groups.isEmpty()) && (wlcgGroups == null || wlcgGroups.isEmpty())) {
+          LOG.error("JWT does not contain a group claim");
+          throw new ForbiddenException("JWT does not contain a group claim");
+        }
+        if (!groups.contains(requestedGroup)) {
+          String errorMessage =
+              String.format("The group %s is not in the user's allowed groups", requestedGroup);
+          LOG.error(errorMessage);
+          throw new ForbiddenException(errorMessage);
+        }
+      } catch (ParseException e) {
+        LOG.error(e.getMessage());
+        throw e;
+      }
     }
     Deployment deployment = deploymentService.createDeployment(request, owner, requestedWithToken);
     return deploymentResourceAssembler.toResource(deployment);
-
   }
 
   /**

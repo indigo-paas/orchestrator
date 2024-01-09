@@ -126,21 +126,24 @@ public class DeploymentController {
     OidcEntity owner = null;
     OidcTokenId requestedWithToken = null;
     String requestedGroup = null;
+    String userToken = null;
     if (oidcProperties.isEnabled()) {
+      userToken = oauth2Tokenservice.getOAuth2TokenFromCurrentAuth();
       owner = oauth2Tokenservice.getOrGenerateOidcEntityFromCurrentAuth();
       requestedWithToken = oauth2Tokenservice.exchangeCurrentAccessToken();
       requestedGroup = request.getUserGroup();
-      String accessToken = oauth2Tokenservice.getAccessToken(requestedWithToken);
+
       try {
         List<String> groups =
-            JwtUtils.getJwtClaimsSet(JwtUtils.parseJwt(accessToken)).getStringListClaim("groups");
-        List<String> wlcgGroups = JwtUtils.getJwtClaimsSet(JwtUtils.parseJwt(accessToken))
+            JwtUtils.getJwtClaimsSet(JwtUtils.parseJwt(userToken)).getStringListClaim("groups");
+        List<String> wlcgGroups = JwtUtils.getJwtClaimsSet(JwtUtils.parseJwt(userToken))
             .getStringListClaim("wlcg.groups");
         if ((groups == null || groups.isEmpty()) && (wlcgGroups == null || wlcgGroups.isEmpty())) {
           LOG.error("JWT does not contain a group claim");
           throw new ForbiddenException("JWT does not contain a group claim");
         }
-        if (!groups.contains(requestedGroup)) {
+        if ((groups != null && !groups.contains(requestedGroup))
+            || (wlcgGroups != null && !wlcgGroups.contains("/" + requestedGroup))) {
           String errorMessage =
               String.format("The group %s is not in the user's allowed groups", requestedGroup);
           LOG.error(errorMessage);

@@ -75,6 +75,42 @@ public class DeploymentController {
   private OidcProperties oidcProperties;
 
   /**
+   * Check if there is a group claim in user's token and verify that the group requested by the user
+   * is in the user's allowed groups
+   *
+   * @param userToken user's token
+   * @param requestedGroup group requested by the user
+   * @throws ParseException if the claim value is not of required type when parsing user's token
+   * @throws ForbiddenException if there is no groups or wlcg groups claim, or they are both empty,
+   *         or the requested group is not in the user's allowed groups
+   */
+  public void authorizeRequestedGroup(String userToken, String requestedGroup)
+      throws ParseException, ForbiddenException {
+    List<String> groups = null;
+    List<String> wlcgGroups = null;
+    try {
+      groups = JwtUtils.getJwtClaimsSet(JwtUtils.parseJwt(userToken)).getStringListClaim("groups");
+      wlcgGroups =
+          JwtUtils.getJwtClaimsSet(JwtUtils.parseJwt(userToken)).getStringListClaim("wlcg.groups");
+    } catch (ParseException e) {
+      LOG.error(e.getMessage());
+      throw e;
+    }
+    if ((groups == null || groups.isEmpty()) && (wlcgGroups == null || wlcgGroups.isEmpty())) {
+      String errorMessage = "User's token does not contain a group claim or it is empty";
+      LOG.error(errorMessage);
+      throw new ForbiddenException(errorMessage);
+    }
+    if ((groups != null && !groups.contains(requestedGroup))
+        || (wlcgGroups != null && !wlcgGroups.contains("/" + requestedGroup))) {
+      String errorMessage =
+          String.format("The group %s is not in the user's authorized groups", requestedGroup);
+      LOG.error(errorMessage);
+      throw new ForbiddenException(errorMessage);
+    }
+  }
+
+  /**
    * Get all deployments.
    *
    * @param createdBy
@@ -85,6 +121,9 @@ public class DeploymentController {
    *          {@link Pageable}
    * @param pagedAssembler
    *          {@link PagedResourcesAssembler}
+   * @throws ParseException if the claim value is not of required type when parsing user's token
+   * @throws ForbiddenException if there is no groups or wlcg groups claim, or they are both empty,
+   *         or the requested group is not in the user's allowed groups
    * @return {@link DeploymentResource}
    */
   @ResponseStatus(HttpStatus.OK)
@@ -94,7 +133,12 @@ public class DeploymentController {
       @RequestParam(name = "createdBy", required = false) @Nullable String createdBy,
       @RequestParam(name = "userGroup", required = false) @Nullable String userGroup,
       @PageableDefault(sort = "createdAt", direction = Direction.DESC) Pageable pageable,
-      PagedResourcesAssembler<Deployment> pagedAssembler) {
+      PagedResourcesAssembler<Deployment> pagedAssembler) throws ParseException, ForbiddenException {
+
+    if (oidcProperties.isEnabled() && userGroup != null) {
+      String userToken = oauth2Tokenservice.getOAuth2TokenFromCurrentAuth();
+      authorizeRequestedGroup(userToken, userGroup);
+    }
 
     Page<Deployment> deployments = deploymentService.getDeployments(pageable, createdBy, userGroup);
 
@@ -113,9 +157,9 @@ public class DeploymentController {
    *
    * @param request {@link DeploymentRequest}
    * @return {@link DeploymentResource}
-   * @throws ParseException if the claim value is not of the required type during JWT parsing
-   * @throws ForbiddenException if there is no groups or wlcg groups claim, or the requested group
-   *         is not in the user's allowed groups
+   * @throws ParseException if the claim value is not of required type when parsing user's token
+   * @throws ForbiddenException if there is no groups or wlcg groups claim, or they are both empty,
+   *         or the requested group is not in the user's allowed groups
    */
   @ResponseStatus(HttpStatus.CREATED)
   @RequestMapping(value = "/deployments", method = RequestMethod.POST,
@@ -125,34 +169,14 @@ public class DeploymentController {
       throws ParseException, ForbiddenException {
     OidcEntity owner = null;
     OidcTokenId requestedWithToken = null;
-    String requestedGroup = null;
-    String userToken = null;
     if (oidcProperties.isEnabled()) {
-      userToken = oauth2Tokenservice.getOAuth2TokenFromCurrentAuth();
+      String userToken = null;
+      String requestedGroup = null;
       owner = oauth2Tokenservice.getOrGenerateOidcEntityFromCurrentAuth();
       requestedWithToken = oauth2Tokenservice.exchangeCurrentAccessToken();
+      userToken = oauth2Tokenservice.getOAuth2TokenFromCurrentAuth();
       requestedGroup = request.getUserGroup();
-
-      try {
-        List<String> groups =
-            JwtUtils.getJwtClaimsSet(JwtUtils.parseJwt(userToken)).getStringListClaim("groups");
-        List<String> wlcgGroups = JwtUtils.getJwtClaimsSet(JwtUtils.parseJwt(userToken))
-            .getStringListClaim("wlcg.groups");
-        if ((groups == null || groups.isEmpty()) && (wlcgGroups == null || wlcgGroups.isEmpty())) {
-          LOG.error("JWT does not contain a group claim");
-          throw new ForbiddenException("JWT does not contain a group claim");
-        }
-        if ((groups != null && !groups.contains(requestedGroup))
-            || (wlcgGroups != null && !wlcgGroups.contains("/" + requestedGroup))) {
-          String errorMessage =
-              String.format("The group %s is not in the user's allowed groups", requestedGroup);
-          LOG.error(errorMessage);
-          throw new ForbiddenException(errorMessage);
-        }
-      } catch (ParseException e) {
-        LOG.error(e.getMessage());
-        throw e;
-      }
+      authorizeRequestedGroup(userToken, requestedGroup);
     }
     Deployment deployment = deploymentService.createDeployment(request, owner, requestedWithToken);
     return deploymentResourceAssembler.toResource(deployment);

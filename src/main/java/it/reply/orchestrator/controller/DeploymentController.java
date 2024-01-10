@@ -76,7 +76,7 @@ public class DeploymentController {
 
   /**
    * Check if there is a group claim in user's token and verify that the group requested by the user
-   * is in the user's allowed groups
+   * is in the user's allowed groups.
    *
    * @param userToken user's token
    * @param requestedGroup group requested by the user
@@ -133,7 +133,8 @@ public class DeploymentController {
       @RequestParam(name = "createdBy", required = false) @Nullable String createdBy,
       @RequestParam(name = "userGroup", required = false) @Nullable String userGroup,
       @PageableDefault(sort = "createdAt", direction = Direction.DESC) Pageable pageable,
-      PagedResourcesAssembler<Deployment> pagedAssembler) throws ParseException, ForbiddenException {
+      PagedResourcesAssembler<Deployment> pagedAssembler)
+      throws ParseException, ForbiddenException {
 
     if (oidcProperties.isEnabled() && userGroup != null) {
       String userToken = oauth2Tokenservice.getOAuth2TokenFromCurrentAuth();
@@ -172,10 +173,10 @@ public class DeploymentController {
     if (oidcProperties.isEnabled()) {
       String userToken = null;
       String requestedGroup = null;
-      owner = oauth2Tokenservice.getOrGenerateOidcEntityFromCurrentAuth();
-      requestedWithToken = oauth2Tokenservice.exchangeCurrentAccessToken();
       userToken = oauth2Tokenservice.getOAuth2TokenFromCurrentAuth();
       requestedGroup = request.getUserGroup();
+      owner = oauth2Tokenservice.getOrGenerateOidcEntityFromCurrentAuth();
+      requestedWithToken = oauth2Tokenservice.exchangeCurrentAccessToken();
       authorizeRequestedGroup(userToken, requestedGroup);
     }
     Deployment deployment = deploymentService.createDeployment(request, owner, requestedWithToken);

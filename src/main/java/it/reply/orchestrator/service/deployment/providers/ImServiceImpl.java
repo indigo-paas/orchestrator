@@ -293,7 +293,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           String errorMessage =
               String.format("%s is not an IAM. Only IAM providers are supported", issuerNode);
           LOG.error(errorMessage);
-          iamService.deleteAllClients(restTemplate, resources);
+          iamService.deleteAllClients(restTemplate, resources, deploymentMessage.isForce());
           throw new IamServiceException(errorMessage);
         }
 
@@ -310,7 +310,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
             String errorMessage = String.format("Impossible to set IAM scopes of node %s. %s",
                 nodeName, e.getMessage());
             LOG.error(errorMessage);
-            iamService.deleteAllClients(restTemplate, resources);
+            iamService.deleteAllClients(restTemplate, resources, deploymentMessage.isForce());
             throw new IamServiceException(errorMessage, e);
           }
           scopes = String.join(" ", inputList);
@@ -322,7 +322,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           String errorMessage =
               "Zero scopes allowed provided are not sufficient to create a client";
           LOG.error(errorMessage);
-          iamService.deleteAllClients(restTemplate, resources);
+          iamService.deleteAllClients(restTemplate, resources, deploymentMessage.isForce());
           throw new IamServiceException(errorMessage);
         }
 
@@ -332,7 +332,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           clientCreated = iamService.createClient(restTemplate,
               wellKnownResponse.getRegistrationEndpoint(), uuid, email, scopes);
         } catch (IamServiceException e) {
-          iamService.deleteAllClients(restTemplate, resources);
+          iamService.deleteAllClients(restTemplate, resources, deploymentMessage.isForce());
           throw e;
         }
 
@@ -407,7 +407,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           infrastructureId);
       deployment.setEndpoint(infrastructureId);
     } catch (ImClientException ex) {
-      iamService.deleteAllClients(restTemplate, resources);
+      iamService.deleteAllClients(restTemplate, resources, deploymentMessage.isForce());
       throw handleImClientException(ex);
     }
 
@@ -788,7 +788,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
     }
 
     // Delete all IAM clients if there are resources of type IAM_TOSCA_NODE_TYPE
-    iamService.deleteAllClients(restTemplate, resources);
+    iamService.deleteAllClients(restTemplate, resources, deploymentMessage.isForce());
 
     return true;
   }

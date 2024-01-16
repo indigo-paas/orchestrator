@@ -308,13 +308,14 @@ public class DeploymentController {
   @RequestMapping(value = "/deployments/{deploymentId}", method = RequestMethod.DELETE,
       produces = MediaType.APPLICATION_JSON_VALUE)
   @PreAuthorize(OFFLINE_ACCESS_REQUIRED_CONDITION)
-  public void deleteDeployment(@PathVariable("deploymentId") String id) {
+  public void deleteDeployment(@PathVariable("deploymentId") String id,
+      @RequestParam(name = "force", required = false) @Nullable String force) {
     OidcEntity owner = null;
     OidcTokenId requestedWithToken = null;
     if (oidcProperties.isEnabled()) {
       owner = oauth2Tokenservice.getOrGenerateOidcEntityFromCurrentAuth();
       requestedWithToken = oauth2Tokenservice.exchangeCurrentAccessToken();
     }
-    deploymentService.deleteDeployment(id, requestedWithToken);
+    deploymentService.deleteDeployment(id, requestedWithToken, force);
   }
 }

@@ -66,11 +66,11 @@ public class DeploymentScheduleRequest extends DeploymentRequest {
   public DeploymentScheduleRequest(@NonNull String template,
       @NonNull Map<String, Object> parameters, @Nullable String callback,
       @Nullable Integer timeoutMins, @Nullable Integer providerTimeoutMins,
-      @Nullable Integer maxProvidersRetry, boolean keepLastAttempt, @NonNull String fileExpression,
-      @NonNull String replicationExpression, @NonNull Integer numberOfReplicas,
-      @Nullable String group) {
+      @Nullable Integer maxProvidersRetry, boolean keepLastAttempt, boolean force,
+      @NonNull String fileExpression, @NonNull String replicationExpression,
+      @NonNull Integer numberOfReplicas, @Nullable String group) {
     super(template, parameters, callback, timeoutMins, providerTimeoutMins, maxProvidersRetry,
-        keepLastAttempt, group);
+        keepLastAttempt, force, group);
     this.fileExpression = fileExpression;
     this.replicationExpression = replicationExpression;
     this.numberOfReplicas = numberOfReplicas;

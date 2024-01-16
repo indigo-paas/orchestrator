@@ -17,33 +17,6 @@
 
 package it.reply.orchestrator.controller;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
-import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
-import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.atomLinks;
-import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.linkWithRel;
-import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.links;
-import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
-import static org.springframework.restdocs.operation.preprocess.Preprocessors.preprocessRequest;
-import static org.springframework.restdocs.operation.preprocess.Preprocessors.preprocessResponse;
-import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
-import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
-import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
-import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
-import static org.springframework.restdocs.request.RequestDocumentation.requestParameters;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-
 import it.reply.orchestrator.config.properties.OidcProperties;
 import it.reply.orchestrator.dal.entity.Deployment;
 import it.reply.orchestrator.dal.entity.OidcEntity;
@@ -57,16 +30,11 @@ import it.reply.orchestrator.resource.DeploymentResourceAssembler;
 import it.reply.orchestrator.service.DeploymentService;
 import it.reply.orchestrator.service.security.OAuth2TokenService;
 import it.reply.orchestrator.utils.JsonUtils;
-
 import java.sql.SQLTransientException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
-
 import org.apache.ibatis.exceptions.PersistenceException;
 import org.flowable.common.engine.api.FlowableOptimisticLockingException;
 import org.hamcrest.Matchers;
@@ -95,6 +63,33 @@ import org.springframework.test.context.junit4.rules.SpringClassRule;
 import org.springframework.test.context.junit4.rules.SpringMethodRule;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
+import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.atomLinks;
+import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.linkWithRel;
+import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.links;
+import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
+import static org.springframework.restdocs.operation.preprocess.Preprocessors.preprocessRequest;
+import static org.springframework.restdocs.operation.preprocess.Preprocessors.preprocessResponse;
+import static org.springframework.restdocs.operation.preprocess.Preprocessors.prettyPrint;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.requestParameters;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 
 @WebMvcTest(controllers = DeploymentController.class, secure = false)
 @RunWith(JUnitParamsRunner.class)
@@ -435,7 +430,9 @@ public class DeploymentControllerTest {
                 fieldWithPath("providerTimeoutMins").description(
                     "Provider timeout value, if provided, must be at least of 1 minute and equal or less than timeoutMins (Optional, default 14400 mins"),
                 fieldWithPath("keepLastAttempt").description(
-                    "Whether the Orchestrator, in case of failure, will keep the resources of the last deploy attempt or not (Optional, default false)")),
+                    "Whether the Orchestrator, in case of failure, will keep the resources of the last deploy attempt or not (Optional, default false)"),
+                fieldWithPath("force").optional().description(
+                  "Force parameter used to force the deletion of a deployment skipping IAM client deletion. Default is false")),
                 responseFields(fieldWithPath("links[]").ignored(),
                 fieldWithPath("uuid").description("The unique identifier of a resource"),
                 fieldWithPath("creationTime").description(
@@ -537,13 +534,14 @@ public class DeploymentControllerTest {
   public void deleteDeploymentConcurrentTransientException(Exception ex)
       throws Exception {
 
+    String force = "false";
     String deploymentId = "34483-d937-4578-bfdb-ebe196bf82dd";
     Mockito.doThrow(ex)
         .when(deploymentService)
-        .deleteDeployment(deploymentId, null);
+        .deleteDeployment(deploymentId, null, force);
 
     mockMvc
-        .perform(delete("/deployments/" + deploymentId))
+        .perform(delete("/deployments/" + deploymentId + "?force=" + force))
         .andExpect(header().string(HttpHeaders.RETRY_AFTER, "0"))
         .andExpect(jsonPath("$.code", is(409)))
         .andExpect(jsonPath("$.title", is("Conflict")))
@@ -582,6 +580,8 @@ public class DeploymentControllerTest {
                     .description("A string containing a TOSCA YAML-formatted template"),
                 fieldWithPath("parameters").optional()
                     .description("The input parameters of the deployment (Map of String, Object)"),
+                fieldWithPath("force").optional().description(
+                      "Force parameter used to force the deletion of a deployment skipping IAM client deletion. Default is false"),
                 fieldWithPath("callback").description("The deployment callback URL (optional)"),
                 fieldWithPath("maxProvidersRetry").description(
                     "The maximum number Cloud providers on which attempt to update the hybrid deployment update (Optional, default unbounded)"),
@@ -655,8 +655,9 @@ public class DeploymentControllerTest {
   @Test
   public void deleteDeployment() throws Exception {
 
+    String force = "false";
     String deploymentId = "34483-d937-4578-bfdb-ebe196bf82dd";
-    Mockito.doNothing().when(deploymentService).deleteDeployment(deploymentId, null);
+    Mockito.doNothing().when(deploymentService).deleteDeployment(deploymentId, null, force);
 
     mockMvc
         .perform(delete("/deployments/" + deploymentId).header(HttpHeaders.AUTHORIZATION,
@@ -670,23 +671,25 @@ public class DeploymentControllerTest {
   @Test
   public void deleteDeploymentWithConflict() throws Exception {
 
+    String force = "false";
     String deploymentId = "34483-d937-4578-bfdb-ebe196bf82dd";
     Mockito.doThrow(new ConflictException("Cannot delete a deployment in DELETE_IN_PROGRESS state"))
         .when(deploymentService)
-        .deleteDeployment(deploymentId, null);
+        .deleteDeployment(deploymentId, null, force);
 
-    mockMvc.perform(delete("/deployments/" + deploymentId)).andExpect(status().isConflict());
+    mockMvc.perform(delete("/deployments/" + deploymentId + "?force=" + force)).andExpect(status().isConflict());
   }
 
   @Test
   public void deleteDeploymentNotFound() throws Exception {
 
+    String force = "false";
     String deploymentId = "34483-d937-4578-bfdb-ebe196bf82dd";
     Mockito.doThrow(new NotFoundException("The deployment <not-found> doesn't exist"))
         .when(deploymentService)
-        .deleteDeployment(deploymentId, null);
+        .deleteDeployment(deploymentId, null, force);
 
-    mockMvc.perform(delete("/deployments/" + deploymentId))
+    mockMvc.perform(delete("/deployments/" + deploymentId + "?force=" + force))
         .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.code", is(404)))
         .andExpect(jsonPath("$.title", is("Not Found")))

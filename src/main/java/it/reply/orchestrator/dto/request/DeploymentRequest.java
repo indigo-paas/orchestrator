@@ -66,9 +66,6 @@ public class DeploymentRequest {
   @Builder.Default
   private boolean keepLastAttempt = false;
 
-  @Builder.Default
-  private boolean force = false;
-
   @Nullable
   private String userGroup;
 

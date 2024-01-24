@@ -288,8 +288,6 @@ public class DeploymentScheduleControllerTest {
                     .description("A string containing a TOSCA YAML-formatted template"),
                 fieldWithPath("parameters").optional()
                     .description("The input parameters of the deployment(Map of String, Object)"),
-                fieldWithPath("force").optional().description(
-                    "Force parameter used to force the deletion of a deployment skipping IAM client deletion. Default is false"),
                 fieldWithPath("callback").description("The deployment callback URL (optional)"),
                 fieldWithPath("maxProvidersRetry").description(
                     "The maximum number Cloud providers on which attempt to create the deployment (Optional, default unbounded)"),

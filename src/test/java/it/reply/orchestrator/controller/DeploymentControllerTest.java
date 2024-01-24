@@ -430,9 +430,7 @@ public class DeploymentControllerTest {
                 fieldWithPath("providerTimeoutMins").description(
                     "Provider timeout value, if provided, must be at least of 1 minute and equal or less than timeoutMins (Optional, default 14400 mins"),
                 fieldWithPath("keepLastAttempt").description(
-                    "Whether the Orchestrator, in case of failure, will keep the resources of the last deploy attempt or not (Optional, default false)"),
-                fieldWithPath("force").optional().description(
-                  "Force parameter used to force the deletion of a deployment skipping IAM client deletion. Default is false")),
+                    "Whether the Orchestrator, in case of failure, will keep the resources of the last deploy attempt or not (Optional, default false)")),
                 responseFields(fieldWithPath("links[]").ignored(),
                 fieldWithPath("uuid").description("The unique identifier of a resource"),
                 fieldWithPath("creationTime").description(
@@ -580,8 +578,6 @@ public class DeploymentControllerTest {
                     .description("A string containing a TOSCA YAML-formatted template"),
                 fieldWithPath("parameters").optional()
                     .description("The input parameters of the deployment (Map of String, Object)"),
-                fieldWithPath("force").optional().description(
-                      "Force parameter used to force the deletion of a deployment skipping IAM client deletion. Default is false"),
                 fieldWithPath("callback").description("The deployment callback URL (optional)"),
                 fieldWithPath("maxProvidersRetry").description(
                     "The maximum number Cloud providers on which attempt to update the hybrid deployment update (Optional, default unbounded)"),
@@ -660,11 +656,13 @@ public class DeploymentControllerTest {
     Mockito.doNothing().when(deploymentService).deleteDeployment(deploymentId, null, force);
 
     mockMvc
-        .perform(delete("/deployments/" + deploymentId).header(HttpHeaders.AUTHORIZATION,
-            OAuth2AccessToken.BEARER_TYPE + " <access token>"))
+        .perform(delete("/deployments/" + deploymentId + "?force=" + force)
+            .header(HttpHeaders.AUTHORIZATION, OAuth2AccessToken.BEARER_TYPE + " <access token>"))
         .andExpect(status().isNoContent())
         .andDo(document("delete-deployment", preprocessRequest(prettyPrint()),
-            preprocessResponse(prettyPrint())));
+            preprocessResponse(prettyPrint()),
+            requestParameters(parameterWithName("force").description(
+                "Optional force parameter used to force the deletion of a deployment skipping IAM client deletion. Default is false"))));
 
   }
 

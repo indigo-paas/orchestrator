@@ -70,7 +70,7 @@ public class DeploymentScheduleRequest extends DeploymentRequest {
       @NonNull String fileExpression, @NonNull String replicationExpression,
       @NonNull Integer numberOfReplicas, @Nullable String group) {
     super(template, parameters, callback, timeoutMins, providerTimeoutMins, maxProvidersRetry,
-        keepLastAttempt, force, group);
+        keepLastAttempt, group);
     this.fileExpression = fileExpression;
     this.replicationExpression = replicationExpression;
     this.numberOfReplicas = numberOfReplicas;

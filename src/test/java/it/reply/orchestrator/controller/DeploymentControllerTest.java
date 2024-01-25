@@ -662,7 +662,7 @@ public class DeploymentControllerTest {
         .andDo(document("delete-deployment", preprocessRequest(prettyPrint()),
             preprocessResponse(prettyPrint()),
             requestParameters(parameterWithName("force").description(
-                "Optional force parameter used to force the deletion of a deployment skipping IAM client deletion. Default is false"))));
+                "Force parameter used to force the deletion of a deployment skipping IAM client deletion. Optional, default false"))));
 
   }
 

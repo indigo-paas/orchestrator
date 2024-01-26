@@ -239,10 +239,10 @@
       <version>${im-java-api.version}</version>
       <exclusions>
         <exclusion>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-core</artifactId>
         </exclusion>
-    </exclusions>
+      </exclusions>
     </dependency>
 
     <!-- Flowable -->

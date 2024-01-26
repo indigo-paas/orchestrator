@@ -237,6 +237,12 @@
       <groupId>es.upv.i3m.grycap</groupId>
       <artifactId>im-java-api</artifactId>
       <version>${im-java-api.version}</version>
+      <exclusions>
+        <exclusion>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+        </exclusion>
+    </exclusions>
     </dependency>
 
     <!-- Flowable -->

@@ -14,7 +14,7 @@ on:
 
 jobs:
   docker:
-    runs-on: macos-12
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/setup-java@v2
         with:

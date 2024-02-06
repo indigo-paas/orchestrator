@@ -566,8 +566,8 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           deployment.getCloudProviderEndpoint().getAllCloudProviderEndpoint();
 
       try {
-        executeWithClient(cloudProviderEndpoints, requestedWithToken,
-            client -> client.destroyInfrastructureAsync(deploymentEndpoint));
+        executeWithClient(cloudProviderEndpoints, requestedWithToken, client -> client
+            .destroyInfrastructureAsync(deploymentEndpoint, deploymentMessage.isForce()));
         deployment.setEndpoint(null);
       } catch (ImClientErrorException exception) {
         if (!exception.getResponseError().is404Error()) {
@@ -775,8 +775,8 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           deployment.getCloudProviderEndpoint().getAllCloudProviderEndpoint();
 
       try {
-        executeWithClient(cloudProviderEndpoints, requestedWithToken,
-            client -> client.destroyInfrastructureAsync(deploymentEndpoint));
+        executeWithClient(cloudProviderEndpoints, requestedWithToken, client -> client
+            .destroyInfrastructureAsync(deploymentEndpoint, deploymentMessage.isForce()));
 
       } catch (ImClientErrorException exception) {
         if (!exception.getResponseError().is404Error()) {

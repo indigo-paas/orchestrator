@@ -17,16 +17,11 @@
 
 package it.reply.orchestrator.service.deployment.providers.factory;
 
-import static org.mockito.Mockito.when;
-
 import alien4cloud.tosca.parser.ParsingException;
-
 import com.google.common.collect.Lists;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.PlainJWT;
-
 import es.upv.i3m.grycap.im.InfrastructureManager;
-
 import it.reply.orchestrator.config.properties.ImProperties;
 import it.reply.orchestrator.config.properties.OidcProperties;
 import it.reply.orchestrator.dal.entity.OidcEntity;
@@ -57,7 +52,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
-
+import static org.mockito.Mockito.when;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import junitparams.converters.Nullable;

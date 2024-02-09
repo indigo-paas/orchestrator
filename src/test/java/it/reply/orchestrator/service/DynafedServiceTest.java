@@ -19,10 +19,9 @@ package it.reply.orchestrator.service;
 
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.google.common.collect.Lists;
-
 import it.reply.orchestrator.dal.entity.OidcTokenId;
-import it.reply.orchestrator.dto.cmdb.CloudService;
 import it.reply.orchestrator.dto.cmdb.CloudProvider;
+import it.reply.orchestrator.dto.cmdb.CloudService;
 import it.reply.orchestrator.dto.cmdb.CloudServiceType;
 import it.reply.orchestrator.dto.dynafed.Dynafed;
 import it.reply.orchestrator.dto.dynafed.Dynafed.File;
@@ -31,12 +30,10 @@ import it.reply.orchestrator.dto.dynafed.Metalink.Url;
 import it.reply.orchestrator.exception.service.DeploymentException;
 import it.reply.orchestrator.function.ThrowingFunction;
 import it.reply.orchestrator.service.security.OAuth2TokenService;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;

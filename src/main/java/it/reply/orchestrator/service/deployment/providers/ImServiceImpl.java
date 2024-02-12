@@ -204,6 +204,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
     String email = null;
     String issuerUser = null;
     String sub = null;
+    String preferredUsername = null;
     if (accessToken != null) {
       try {
         email = JwtUtils.getJwtClaimsSet(JwtUtils.parseJwt(accessToken)).getStringClaim("email");
@@ -224,6 +225,13 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
         String errorMessage = String.format("Sub not found in user's token. %s", e.getMessage());
         LOG.error(errorMessage);
         throw new IamServiceException(errorMessage, e);
+      }
+      try {
+        preferredUsername = JwtUtils.getJwtClaimsSet(JwtUtils.parseJwt(accessToken))
+            .getStringClaim("preferred_username");
+      } catch (ParseException e) {
+        LOG.debug(e.getMessage());
+        preferredUsername = null;
       }
     }
 
@@ -248,7 +256,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
 
     // add tags
     toscaService.setDeploymentTags(ar, orchestratorProperties.getUrl().toString(),
-        deployment.getId(), email);
+        deployment.getId(), email, preferredUsername);
 
     // Get resources linked to the deployment
     Map<Boolean, Set<Resource>> resources =

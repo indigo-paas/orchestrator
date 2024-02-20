@@ -269,6 +269,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
     String email = null;
     String issuerUser = null;
     String sub = null;
+    String preferredUsername = null;
     if (accessToken != null) {
       try {
         email = JwtUtils.getJwtClaimsSet(JwtUtils.parseJwt(accessToken)).getStringClaim("email");
@@ -289,6 +290,13 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
         String errorMessage = String.format("Sub not found in user's token. %s", e.getMessage());
         LOG.error(errorMessage);
         throw new IamServiceException(errorMessage, e);
+      }
+      try {
+        preferredUsername = JwtUtils.getJwtClaimsSet(JwtUtils.parseJwt(accessToken))
+            .getStringClaim("preferred_username");
+      } catch (ParseException e) {
+        LOG.debug(e.getMessage());
+        preferredUsername = null;
       }
     }
 
@@ -313,7 +321,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
 
     // add tags
     toscaService.setDeploymentTags(ar, orchestratorProperties.getUrl().toString(),
-        deployment.getId(), email);
+        deployment.getId(), email, preferredUsername);
 
     // Get resources linked to the deployment
     Map<Boolean, Set<Resource>> resources =
@@ -361,7 +369,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           String errorMessage =
               String.format("%s is not an IAM. Only IAM providers are supported", issuerNode);
           LOG.error(errorMessage);
-          iamService.deleteAllClients(restTemplate, resources);
+          iamService.deleteAllClients(restTemplate, resources, deploymentMessage.isForce());
           throw new IamServiceException(errorMessage);
         }
 
@@ -378,7 +386,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
             String errorMessage = String.format("Impossible to set IAM scopes of node %s. %s",
                 nodeName, e.getMessage());
             LOG.error(errorMessage);
-            iamService.deleteAllClients(restTemplate, resources);
+            iamService.deleteAllClients(restTemplate, resources, deploymentMessage.isForce());
             throw new IamServiceException(errorMessage, e);
           }
           scopes = String.join(" ", inputList);
@@ -390,7 +398,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           String errorMessage =
               "Zero scopes allowed provided are not sufficient to create a client";
           LOG.error(errorMessage);
-          iamService.deleteAllClients(restTemplate, resources);
+          iamService.deleteAllClients(restTemplate, resources, deploymentMessage.isForce());
           throw new IamServiceException(errorMessage);
         }
 
@@ -400,7 +408,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           clientCreated = iamService.createClient(restTemplate,
               wellKnownResponse.getRegistrationEndpoint(), uuid, email, scopes);
         } catch (IamServiceException e) {
-          iamService.deleteAllClients(restTemplate, resources);
+          iamService.deleteAllClients(restTemplate, resources, deploymentMessage.isForce());
           throw e;
         }
 
@@ -521,7 +529,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           infrastructureId);
       deployment.setEndpoint(infrastructureId);
     } catch (ImClientException ex) {
-      iamService.deleteAllClients(restTemplate, resources);
+      iamService.deleteAllClients(restTemplate, resources, deploymentMessage.isForce());
       throw handleImClientException(ex);
     }
 
@@ -680,8 +688,8 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           deployment.getCloudProviderEndpoint().getAllCloudProviderEndpoint();
 
       try {
-        executeWithClient(cloudProviderEndpoints, requestedWithToken,
-            client -> client.destroyInfrastructureAsync(deploymentEndpoint));
+        executeWithClient(cloudProviderEndpoints, requestedWithToken, client -> client
+            .destroyInfrastructureAsync(deploymentEndpoint, deploymentMessage.isForce()));
         deployment.setEndpoint(null);
       } catch (ImClientErrorException exception) {
         if (!exception.getResponseError().is404Error()) {
@@ -889,8 +897,8 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           deployment.getCloudProviderEndpoint().getAllCloudProviderEndpoint();
 
       try {
-        executeWithClient(cloudProviderEndpoints, requestedWithToken,
-            client -> client.destroyInfrastructureAsync(deploymentEndpoint));
+        executeWithClient(cloudProviderEndpoints, requestedWithToken, client -> client
+            .destroyInfrastructureAsync(deploymentEndpoint, deploymentMessage.isForce()));
 
       } catch (ImClientErrorException exception) {
         if (!exception.getResponseError().is404Error()) {
@@ -902,7 +910,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
     }
 
     // Delete all IAM clients if there are resources of type IAM_TOSCA_NODE_TYPE
-    iamService.deleteAllClients(restTemplate, resources);
+    iamService.deleteAllClients(restTemplate, resources, deploymentMessage.isForce());
 
     // Delete all buckets clients if there are resources of type S3_TOSCA_NODE_TYPE
     deleteAllBuckets(resources);

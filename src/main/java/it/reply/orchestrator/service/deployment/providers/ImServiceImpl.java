@@ -146,6 +146,9 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
   @Autowired
   private ImClientFactory imClientFactory;
 
+  @Autowired
+  private CredentialProviderService credProvServ;
+
   private static final String VMINFO = "VirtualMachineInfo";
   public static final String IAM_TOSCA_NODE_TYPE = "tosca.nodes.indigo.iam.client";
   public static final String ISSUER = "issuer";
@@ -158,6 +161,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
   private static final String AWS_SECRET_KEY = "aws_secret_key";
   private static final String S3_URL = "s3_url";
   private static final String AWS_REGION = "us-east-1";
+
 
   private static void createBucket(S3Client s3, String bucketName) {
     CreateBucketRequest createBucketRequest =
@@ -475,14 +479,20 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           s3TemplateInput = toscaService.getS3Properties(ar);
         }
 
-        String accessKeyId = s3TemplateInput.get(nodeName).get(AWS_ACCESS_KEY);
-        String secretKey = s3TemplateInput.get(nodeName).get(AWS_SECRET_KEY);
+        String accessKeyId = null;
+        String secretKey = null;
         String bucketName = uuid + "-" + s3TemplateInput.get(nodeName).get(BUCKET_NAME);
         String endpoint = s3TemplateInput.get(nodeName).get(S3_URL);
         S3Client s3 = null;
 
+
         // Configure S3 client with credentials
         try {
+          Map<String, Object> vaultOutput =
+              credProvServ.credentialProvider("s3.cloud.infn.it", accessToken);
+          Map<String, String> s3Credentials = (Map<String, String>) vaultOutput.get("data");
+          accessKeyId = s3Credentials.get("aws_access_key");
+          secretKey = s3Credentials.get("aws_secret_key");
           s3 = S3Client.builder().endpointOverride(URI.create(endpoint))
               .region(Region.of(AWS_REGION)).forcePathStyle(true)
               .credentialsProvider(StaticCredentialsProvider
@@ -490,7 +500,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
               .build();
         } catch (Exception e) {
           LOG.error(e.getMessage());
-          deleteAllBuckets(resources);
+          //deleteAllBuckets(resources);
           throw e;
         }
 

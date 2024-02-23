@@ -18,10 +18,14 @@
 package it.reply.orchestrator.service.deployment.providers;
 
 import it.reply.orchestrator.dto.security.ServiceCredential;
+import java.util.Map;
 
 public interface CredentialProviderService {
 
   public <T extends ServiceCredential> T credentialProvider(String serviceId,
       String accessToken, Class<T> clazz);
+
+  public Map<String, Object> credentialProvider(String serviceId,
+      String accessToken);
 
 }

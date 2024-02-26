@@ -11,7 +11,9 @@ local.properties
 .settings/
 .loadpath
 target/
-.vscode/
+.vscode/**
+!.vscode/launch.json
+ignite/
 
 # Eclipse Core
 .project

@@ -1,0 +1,39 @@
+version: "3"
+
+services:
+  base:
+    container_name: base
+    image: "mcr.microsoft.com/devcontainers/typescript-node:18"
+    depends_on:
+      - db_orchestrator
+      - db_workflow
+    environment:
+      DATASOURCE_ORCHESTRATOR_URL: "jdbc:mysql://db_orchestrator:3306/orchestrator?allowPublicKeyRetrieval=true&useSSL=false"
+      DATASOURCE_ORCHESTRATOR_PASSWORD: root
+      DATASOURCE_WORKFLOW_URL: "jdbc:mysql://db_workflow:3306/workflow?allowPublicKeyRetrieval=true&useSSL=false"
+      DATASOURCE_WORKFLOW_PASSWORD: root
+    volumes:
+      - ..:/workspace:cached
+    command: sleep infinity
+
+  db_orchestrator:
+    container_name: db_orchestrator
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: orchestrator
+    volumes:
+      - data_orchestrator:/var/lib/mysql
+
+  db_workflow:
+    container_name: db_workflow
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: workflow
+    volumes:
+      - data_workflow:/var/lib/mysql
+
+volumes:
+  data_orchestrator:
+  data_workflow:

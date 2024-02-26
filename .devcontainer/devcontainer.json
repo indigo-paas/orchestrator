@@ -31,7 +31,8 @@
       "extensions": [
         "streetsidesoftware.code-spell-checker",
         "SonarSource.sonarlint-vscode",
-        "redhat.vscode-xml"
+        "redhat.vscode-xml",
+        "esbenp.prettier-vscode"
       ]
     }
   }

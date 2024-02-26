@@ -13,7 +13,7 @@ services:
       DATASOURCE_ORCHESTRATOR_URL: "jdbc:mysql://db_orchestrator:3306/${DB_ORCHESTRATOR_NAME}?allowPublicKeyRetrieval=true&useSSL=false"
       DATASOURCE_WORKFLOW_NAME: ${DB_WORKFLOW_NAME}
       DATASOURCE_WORKFLOW_PASSWORD: ${DB_WORKFLOW_PASSWORD}
-      DATASOURCE_WORKFLOW_URL: "jdbc:mysql://db_workflow:3306/${DB_WORKFLOW_NAME}?allowPublicKeyRetrieval=true&useSSL=false"      
+      DATASOURCE_WORKFLOW_URL: "jdbc:mysql://db_workflow:3306/${DB_WORKFLOW_NAME}?allowPublicKeyRetrieval=true&useSSL=false"
     volumes:
       - ..:/workspace:cached
     command: sleep infinity
@@ -23,7 +23,7 @@ services:
     image: mysql:8.0
     environment:
       MYSQL_DATABASE: ${DB_ORCHESTRATOR_NAME}
-      MYSQL_ROOT_PASSWORD:  ${DB_ORCHESTRATOR_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ORCHESTRATOR_PASSWORD}
     volumes:
       - data_orchestrator:/var/lib/mysql
 

@@ -8,10 +8,12 @@ services:
       - db_orchestrator
       - db_workflow
     environment:
-      DATASOURCE_ORCHESTRATOR_URL: "jdbc:mysql://db_orchestrator:3306/orchestrator?allowPublicKeyRetrieval=true&useSSL=false"
-      DATASOURCE_ORCHESTRATOR_PASSWORD: root
-      DATASOURCE_WORKFLOW_URL: "jdbc:mysql://db_workflow:3306/workflow?allowPublicKeyRetrieval=true&useSSL=false"
-      DATASOURCE_WORKFLOW_PASSWORD: root
+      DATASOURCE_ORCHESTRATOR_NAME: ${DB_ORCHESTRATOR_NAME}
+      DATASOURCE_ORCHESTRATOR_PASSWORD: ${DB_ORCHESTRATOR_PASSWORD}
+      DATASOURCE_ORCHESTRATOR_URL: "jdbc:mysql://db_orchestrator:3306/${DB_ORCHESTRATOR_NAME}?allowPublicKeyRetrieval=true&useSSL=false"
+      DATASOURCE_WORKFLOW_NAME: ${DB_WORKFLOW_NAME}
+      DATASOURCE_WORKFLOW_PASSWORD: ${DB_WORKFLOW_PASSWORD}
+      DATASOURCE_WORKFLOW_URL: "jdbc:mysql://db_workflow:3306/${DB_WORKFLOW_NAME}?allowPublicKeyRetrieval=true&useSSL=false"      
     volumes:
       - ..:/workspace:cached
     command: sleep infinity
@@ -20,8 +22,8 @@ services:
     container_name: db_orchestrator
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: orchestrator
+      MYSQL_DATABASE: ${DB_ORCHESTRATOR_NAME}
+      MYSQL_ROOT_PASSWORD:  ${DB_ORCHESTRATOR_PASSWORD}
     volumes:
       - data_orchestrator:/var/lib/mysql
 
@@ -29,8 +31,8 @@ services:
     container_name: db_workflow
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: workflow
+      MYSQL_DATABASE: ${DB_WORKFLOW_NAME}
+      MYSQL_ROOT_PASSWORD: ${DB_WORKFLOW_PASSWORD}
     volumes:
       - data_workflow:/var/lib/mysql
 

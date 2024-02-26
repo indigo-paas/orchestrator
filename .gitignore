@@ -14,6 +14,8 @@ target/
 **/.vscode/**
 !**/.vscode/launch.json
 ignite/
+**/security*.yml
+**/security*.yaml
 
 # Eclipse Core
 .project

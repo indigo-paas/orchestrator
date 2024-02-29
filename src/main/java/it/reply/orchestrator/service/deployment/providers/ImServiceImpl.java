@@ -175,19 +175,30 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
     s3.deleteBucket(deleteBucketRequest);
   }
 
-  private void deleteAllBuckets(Map<Boolean, Set<Resource>> resources) {
+  private void deleteAllBuckets(Map<Boolean, Set<Resource>> resources, String accessToken) {
     for (Resource resource : resources.get(false)) {
       if (resource.getToscaNodeType().equals(S3_TOSCA_NODE_TYPE)) {
         Map<String, String> resourceMetadata = resource.getMetadata();
         S3Client s3 = null;
+
+        String accessKeyId = null;
+        String secretKey = null;
+        String bucketName = resourceMetadata.get(BUCKET_NAME);
+        String s3Url = resourceMetadata.get(S3_URL);
         if (resourceMetadata != null) {
 
           // Configure S3 client with credentials
           try {
-            s3 = S3Client.builder().endpointOverride(URI.create(resourceMetadata.get(S3_URL)))
+            Map<String, Object> vaultOutput =
+              credProvServ.credentialProvider(s3Url.split("//")[1], accessToken);
+          Map<String, String> s3Credentials = (Map<String, String>) vaultOutput.get("data");
+          accessKeyId = s3Credentials.get("aws_access_key");
+          secretKey = s3Credentials.get("aws_secret_key");
+
+            s3 = S3Client.builder().endpointOverride(URI.create(s3Url))
                 .region(Region.of(AWS_REGION)).forcePathStyle(true)
                 .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(
-                    resourceMetadata.get(AWS_ACCESS_KEY), resourceMetadata.get(AWS_SECRET_KEY))))
+                  accessKeyId, secretKey)))
                 .build();
           } catch (Exception e) {
             LOG.error(e.getMessage());
@@ -196,11 +207,11 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
 
           // Delete S3 bucket
           try {
-            LOG.info("Deleting bucket with name {}", resourceMetadata.get(BUCKET_NAME));
-            deleteBucket(s3, resourceMetadata.get(BUCKET_NAME));
-            LOG.info("Bucket {} successfully deleted", resourceMetadata.get(BUCKET_NAME));
+            LOG.info("Deleting bucket with name {}", bucketName);
+            deleteBucket(s3, bucketName);
+            LOG.info("Bucket {} successfully deleted", bucketName);
           } catch (NoSuchBucketException e) {
-            LOG.warn("Bucket {} was not found", resourceMetadata.get(BUCKET_NAME));
+            LOG.warn("Bucket {} was not found", bucketName);
           } catch (Exception e) {
             LOG.error(e.getMessage());
             throw e;
@@ -438,22 +449,21 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
             RegisteredClient orchestratorClient = orchestratorClients.get(issuerNode);
             String orchestratorClientId = orchestratorClient.getClientId();
             String orchestratorClientSecret = orchestratorClient.getClientSecret();
+            String clientOwner = iamTemplateInput.get(nodeName).get(OWNER);
 
             // Request a token with client_credentials with the orchestrator client, when
             // necessary
-            if (iamTemplateInput.get(nodeName).get(OWNER) != null
-                || issuerNode.equals(issuerUser)) {
+            if (clientOwner != null || !clientOwner.isEmpty() || issuerNode.equals(issuerUser)) {
               tokenCredentials = iamService.getTokenClientCredentials(restTemplate,
                   orchestratorClientId, orchestratorClientSecret,
                   iamService.getOrchestratorScopes(), wellKnownResponse.getTokenEndpoint());
             }
             // Assign ownership for the client when possible
-            if (iamTemplateInput.get(nodeName).get(OWNER) != null) {
+            if (clientOwner != null && !clientOwner.isEmpty()) {
               iamService.assignOwnership(restTemplate, clientCreated.get(CLIENT_ID), issuerNode,
                   iamTemplateInput.get(nodeName).get(OWNER), tokenCredentials);
             }
-            if (iamTemplateInput.get(nodeName).get(OWNER) == null
-                && issuerNode.equals(issuerUser)) {
+            if ((clientOwner == null || clientOwner.isEmpty()) && issuerNode.equals(issuerUser)) {
               iamService.assignOwnership(restTemplate, clientCreated.get(CLIENT_ID), issuerNode,
                   sub, tokenCredentials);
             }
@@ -482,18 +492,18 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
         String accessKeyId = null;
         String secretKey = null;
         String bucketName = uuid + "-" + s3TemplateInput.get(nodeName).get(BUCKET_NAME);
-        String endpoint = s3TemplateInput.get(nodeName).get(S3_URL);
+        String s3Url = s3TemplateInput.get(nodeName).get(S3_URL);
         S3Client s3 = null;
 
 
         // Configure S3 client with credentials
         try {
           Map<String, Object> vaultOutput =
-              credProvServ.credentialProvider("s3.cloud.infn.it", accessToken);
+              credProvServ.credentialProvider(s3Url.split("//")[1], accessToken);
           Map<String, String> s3Credentials = (Map<String, String>) vaultOutput.get("data");
           accessKeyId = s3Credentials.get("aws_access_key");
           secretKey = s3Credentials.get("aws_secret_key");
-          s3 = S3Client.builder().endpointOverride(URI.create(endpoint))
+          s3 = S3Client.builder().endpointOverride(URI.create(s3Url))
               .region(Region.of(AWS_REGION)).forcePathStyle(true)
               .credentialsProvider(StaticCredentialsProvider
                   .create(AwsBasicCredentials.create(accessKeyId, secretKey)))
@@ -510,16 +520,14 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           LOG.info("Bucket successfully created: {}", bucketName);
         } catch (Exception e) {
           LOG.error(e.getMessage());
-          deleteAllBuckets(resources);
+          deleteAllBuckets(resources, accessToken);
           throw e;
         }
 
         // Write info in resource metadata
         Map<String, String> resourceMetadata = new HashMap<>();
-        resourceMetadata.put(AWS_ACCESS_KEY, accessKeyId);
-        resourceMetadata.put(AWS_SECRET_KEY, secretKey);
         resourceMetadata.put(BUCKET_NAME, bucketName);
-        resourceMetadata.put(S3_URL, endpoint);
+        resourceMetadata.put(S3_URL, s3Url);
         resource.setMetadata(resourceMetadata);
       }
     }
@@ -898,6 +906,11 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
 
     final OidcTokenId requestedWithToken = deploymentMessage.getRequestedWithToken();
 
+    String accessToken = null;
+    if (oidcProperties.isEnabled()) {
+      accessToken = oauth2TokenService.getAccessToken(requestedWithToken);
+    }
+
     String deploymentEndpoint = deployment.getEndpoint();
 
     if (deploymentEndpoint != null) {
@@ -923,7 +936,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
     iamService.deleteAllClients(restTemplate, resources, deploymentMessage.isForce());
 
     // Delete all buckets clients if there are resources of type S3_TOSCA_NODE_TYPE
-    deleteAllBuckets(resources);
+    deleteAllBuckets(resources, accessToken);
 
     return true;
   }

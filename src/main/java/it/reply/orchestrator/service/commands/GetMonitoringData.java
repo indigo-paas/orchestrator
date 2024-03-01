@@ -23,6 +23,7 @@ import it.reply.orchestrator.config.properties.MonitoringProperties;
 import it.reply.orchestrator.dto.RankCloudProvidersMessage;
 import it.reply.orchestrator.service.MonitoringService;
 import it.reply.orchestrator.utils.WorkflowConstants;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -46,8 +47,8 @@ public class GetMonitoringData extends BaseRankCloudProvidersCommand {
   public void execute(DelegateExecution execution,
       RankCloudProvidersMessage rankCloudProvidersMessage) {
 
-    // Get monitoring data for each Cloud Provider
-    if (monitoringProperties.getUrl() != null) {
+    if (isValid(monitoringProperties.getUrl())) {
+      // Get monitoring data for each Cloud Provider
       Map<String, List<PaasMachine>> metrics =
           rankCloudProvidersMessage.getCloudProviders().keySet().stream().map(providerId -> {
             try {
@@ -61,6 +62,14 @@ public class GetMonitoringData extends BaseRankCloudProvidersCommand {
 
       rankCloudProvidersMessage.setCloudProvidersMonitoringData(metrics);
     }
+  }
+
+  private boolean isValid(URI url) {
+
+    if (url == null) {
+      return false;
+    }
+    return !url.toString().trim().isEmpty();
   }
 
   @Override

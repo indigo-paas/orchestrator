@@ -366,22 +366,21 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
             RegisteredClient orchestratorClient = orchestratorClients.get(issuerNode);
             String orchestratorClientId = orchestratorClient.getClientId();
             String orchestratorClientSecret = orchestratorClient.getClientSecret();
+            String clientOwner = iamTemplateInput.get(nodeName).get(OWNER);
 
             // Request a token with client_credentials with the orchestrator client, when
             // necessary
-            if (iamTemplateInput.get(nodeName).get(OWNER) != null
-                || issuerNode.equals(issuerUser)) {
+            if ((clientOwner != null && !clientOwner.isEmpty()) || issuerNode.equals(issuerUser)) {
               tokenCredentials = iamService.getTokenClientCredentials(restTemplate,
                   orchestratorClientId, orchestratorClientSecret,
                   iamService.getOrchestratorScopes(), wellKnownResponse.getTokenEndpoint());
             }
             // Assign ownership for the client when possible
-            if (iamTemplateInput.get(nodeName).get(OWNER) != null) {
+            if (clientOwner != null && !clientOwner.isEmpty()) {
               iamService.assignOwnership(restTemplate, clientCreated.get(CLIENT_ID), issuerNode,
-                  iamTemplateInput.get(nodeName).get(OWNER), tokenCredentials);
+                  clientOwner, tokenCredentials);
             }
-            if (iamTemplateInput.get(nodeName).get(OWNER) == null
-                && issuerNode.equals(issuerUser)) {
+            if ((clientOwner == null || clientOwner.isEmpty()) && issuerNode.equals(issuerUser)) {
               iamService.assignOwnership(restTemplate, clientCreated.get(CLIENT_ID), issuerNode,
                   sub, tokenCredentials);
             }

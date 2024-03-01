@@ -13,7 +13,7 @@
     "ghcr.io/devcontainers/features/java:1": {
       "version": "8",
       "installMaven": "true",
-      "mavenVersion": "3.3.9",
+      "mavenVersion": "3.5.4",
       "installGradle": "false"
     },
     "ghcr.io/devcontainers-contrib/features/act:1": {},

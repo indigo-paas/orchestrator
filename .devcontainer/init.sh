@@ -16,6 +16,4 @@ GRANT ALL PRIVILEGES ON ${DB_WORKFLOW_NAME}.* TO '${DB_WORKFLOW_USERNAME}'@'%';
 -- GRANT XA_RECOVER_ADMIN ON *.* TO '${DB_WORKFLOW_USERNAME}'@'%';
 "
 
-echo "${text}"
-
 mysql --user="root" --password="${MYSQL_ROOT_PASSWORD}" --execute="${text}"

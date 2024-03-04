@@ -21,7 +21,7 @@ services:
 
   db:
     container_name: db
-    image: mysql:8.0
+    image: mysql:5.7
     environment:
       MYSQL_ROOT_PASSWORD: root
       DB_ORCHESTRATOR_NAME: ${DB_ORCHESTRATOR_NAME}

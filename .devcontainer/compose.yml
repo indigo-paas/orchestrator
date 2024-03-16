@@ -3,7 +3,8 @@ version: "3"
 services:
   base:
     container_name: orchestrator-devc-base
-    image: "mcr.microsoft.com/devcontainers/typescript-node:18"
+    build: 
+      dockerfile: Dockerfile
     depends_on:
       - db
       - oidc-agent

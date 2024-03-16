@@ -16,11 +16,12 @@ services:
       DATASOURCE_WORKFLOW_USERNAME: ${DB_WORKFLOW_USERNAME-workflow}
       DATASOURCE_WORKFLOW_PASSWORD: ${DB_WORKFLOW_PASSWORD-root}
       DATASOURCE_WORKFLOW_URL: "jdbc:mysql://orchestrator-devc-db:3306/${DB_WORKFLOW_NAME-workflow}?allowPublicKeyRetrieval=true&useSSL=false"
-      ORCHENT_URL: "http://orchestrator-dev-base:8080"
-      OIDC_SOCK: "/oidc-agent.sock"
+      ORCHENT_URL: "http://orchestrator-devc-base:8080"
     volumes:
       - ..:/workspace:cached
       - orchestrator-devc-oidc-agent-config:/oidc-agent-config
+    networks:
+      - orchestrator-devc-net
     command: sleep infinity
 
   db:
@@ -37,6 +38,8 @@ services:
     volumes:
       - orchestrator-devc-db-data:/var/lib/mysql
       - ./init.sh:/docker-entrypoint-initdb.d/init.sh
+    networks:
+      - orchestrator-devc-net
 
   oidc-agent:
     container_name: orchestrator-devc-oidc-agent
@@ -45,8 +48,14 @@ services:
     volumes:
       - orchestrator-devc-oidc-agent-iss-config:/root/.oidc-agent
       - orchestrator-devc-oidc-agent-config:/tmp
+    networks:
+      - orchestrator-devc-net
 
 volumes:
   orchestrator-devc-db-data:
   orchestrator-devc-oidc-agent-iss-config:
   orchestrator-devc-oidc-agent-config:
+
+networks:
+  orchestrator-devc-net:
+    name: orchestrator-devc-net

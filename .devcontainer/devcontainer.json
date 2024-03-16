@@ -32,7 +32,8 @@
         "streetsidesoftware.code-spell-checker",
         "SonarSource.sonarlint-vscode",
         "redhat.vscode-xml",
-        "esbenp.prettier-vscode"
+        "esbenp.prettier-vscode",
+        "ms-azuretools.vscode-docker"
       ]
     }
   }

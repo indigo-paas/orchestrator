@@ -18,6 +18,7 @@ services:
       DATASOURCE_WORKFLOW_PASSWORD: ${DB_WORKFLOW_PASSWORD-root}
       DATASOURCE_WORKFLOW_URL: "jdbc:mysql://orchestrator-devc-db:3306/${DB_WORKFLOW_NAME-workflow}?allowPublicKeyRetrieval=true&useSSL=false"
       ORCHENT_URL: "http://orchestrator-devc-base:8080"
+      OIDC_AGENT_CONTAINER_NAME: orchestrator-devc-oidc-agent
     volumes:
       - ..:/workspace:cached
       - orchestrator-devc-oidc-agent-config:/oidc-agent-config

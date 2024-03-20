@@ -29,12 +29,33 @@
   "customizations": {
     "vscode": {
       "extensions": [
+        "ms-azuretools.vscode-docker",
+        "esbenp.prettier-vscode",
         "streetsidesoftware.code-spell-checker",
         "SonarSource.sonarlint-vscode",
-        "redhat.vscode-xml",
-        "esbenp.prettier-vscode",
-        "ms-azuretools.vscode-docker"
+        "eamodio.gitlens",
+        "redhat.vscode-xml"
       ]
+    },
+    "settings": {
+      "java.compile.nullAnalysis.mode": "automatic",
+      "editor.defaultFormatter": "esbenp.prettier-vscode",
+      "[xml]": {
+        "editor.defaultFormatter": "redhat.vscode-xml"
+      },
+      "[sql]": {
+        "editor.defaultFormatter": "adpyke.vscode-sql-formatter"
+      },
+      "[dockercompose]": {
+        "editor.defaultFormatter": "ms-azuretools.vscode-docker"
+      },
+      "[dockerfile]": {
+        "editor.defaultFormatter": "ms-azuretools.vscode-docker"
+      },
+      "sonarlint.connectedMode.project": {
+        "connectionId": "indigo-paas/orchestrator",
+        "projectKey": "indigo-paas_orchestrator"
+      }
     }
   }
   // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.

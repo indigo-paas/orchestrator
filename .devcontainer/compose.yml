@@ -3,8 +3,7 @@ version: "3"
 services:
   base:
     container_name: orchestrator-devc-base
-    build: 
-      dockerfile: Dockerfile
+    image: giosava94/orchestrator-devcontainer-base
     depends_on:
       - db
       - oidc-agent

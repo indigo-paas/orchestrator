@@ -60,6 +60,7 @@ import it.reply.orchestrator.service.IamService;
 import it.reply.orchestrator.service.IamServiceException;
 import it.reply.orchestrator.service.IndigoInputsPreProcessorService;
 import it.reply.orchestrator.service.IndigoInputsPreProcessorService.RuntimeProperties;
+import it.reply.orchestrator.service.S3Service;
 import it.reply.orchestrator.service.ToscaService;
 import it.reply.orchestrator.service.deployment.providers.factory.ImClientFactory;
 import it.reply.orchestrator.service.security.CustomOAuth2TemplateFactory;
@@ -70,7 +71,6 @@ import it.reply.orchestrator.utils.OneDataUtils;
 import it.reply.orchestrator.utils.ToscaConstants;
 import it.reply.orchestrator.utils.WorkflowConstants.ErrorCode;
 import java.io.IOException;
-import java.net.URI;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -96,13 +96,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
-import software.amazon.awssdk.services.s3.model.DeleteBucketRequest;
-import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 
 @Service
 @DeploymentProviderQualifier(DeploymentProvider.IM)
@@ -118,6 +111,9 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
 
   @Autowired
   private IamService iamService;
+
+  @Autowired
+  private S3Service s3Service;
 
   @Autowired
   private CustomOAuth2TemplateFactory templateFactory;
@@ -146,9 +142,6 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
   @Autowired
   private ImClientFactory imClientFactory;
 
-  @Autowired
-  private CredentialProviderService credProvServ;
-
   private static final String VMINFO = "VirtualMachineInfo";
   public static final String IAM_TOSCA_NODE_TYPE = "tosca.nodes.indigo.iam.client";
   public static final String ISSUER = "issuer";
@@ -161,67 +154,6 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
   private static final String AWS_SECRET_KEY = "aws_secret_key";
   private static final String S3_URL = "s3_url";
   private static final String AWS_REGION = "us-east-1";
-
-  private static void createBucket(S3Client s3, String bucketName) {
-    CreateBucketRequest createBucketRequest =
-        CreateBucketRequest.builder().bucket(bucketName).build();
-    s3.createBucket(createBucketRequest);
-  }
-
-  private static void deleteBucket(S3Client s3, String bucketName) {
-    DeleteBucketRequest deleteBucketRequest =
-        DeleteBucketRequest.builder().bucket(bucketName).build();
-    s3.deleteBucket(deleteBucketRequest);
-  }
-
-  private void deleteAllBuckets(Map<Boolean, Set<Resource>> resources, String accessToken) {
-    for (Resource resource : resources.get(false)) {
-      if (resource.getToscaNodeType().equals(S3_TOSCA_NODE_TYPE)) {
-        Map<String, String> resourceMetadata = resource.getMetadata();
-        S3Client s3 = null;
-
-        String accessKeyId = null;
-        String secretKey = null;
-        String bucketName = resourceMetadata.get(BUCKET_NAME);
-        String s3Url = resourceMetadata.get(S3_URL);
-        if (resourceMetadata != null) {
-
-          // Configure S3 client with credentials
-          try {
-            Map<String, Object> vaultOutput =
-                credProvServ.credentialProvider(s3Url.split("//")[1], accessToken);
-            Map<String, String> s3Credentials = (Map<String, String>) vaultOutput.get("data");
-            accessKeyId = s3Credentials.get("aws_access_key");
-            secretKey = s3Credentials.get("aws_secret_key");
-
-            s3 = S3Client.builder().endpointOverride(URI.create(s3Url))
-                .region(Region.of(AWS_REGION)).forcePathStyle(true)
-                .credentialsProvider(StaticCredentialsProvider
-                    .create(AwsBasicCredentials.create(accessKeyId, secretKey)))
-                .build();
-          } catch (Exception e) {
-            LOG.error(e.getMessage());
-            throw e;
-          }
-
-          // Delete S3 bucket
-          try {
-            LOG.info("Deleting bucket with name {}", bucketName);
-            deleteBucket(s3, bucketName);
-            LOG.info("Bucket {} successfully deleted", bucketName);
-          } catch (NoSuchBucketException e) {
-            LOG.warn("Bucket {} was not found", bucketName);
-          } catch (Exception e) {
-            LOG.error(e.getMessage());
-            throw e;
-          }
-        } else {
-          LOG.info("Found node of type {} but no bucket info is registered in metadata",
-              S3_TOSCA_NODE_TYPE);
-        }
-      }
-    }
-  }
 
   protected <R> R executeWithClientForResult(List<CloudProviderEndpoint> cloudProviderEndpoints,
       @Nullable OidcTokenId requestedWithToken,
@@ -480,6 +412,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
         }
       }
 
+      // Create S3 buckets
       if (resource.getToscaNodeType().equals(S3_TOSCA_NODE_TYPE)) {
         String nodeName = resource.getToscaNodeName();
         LOG.info("Found node of type: {}. Node name: {}", S3_TOSCA_NODE_TYPE, nodeName);
@@ -488,45 +421,19 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           s3TemplateInput = toscaService.getS3Properties(ar);
         }
 
-        String accessKeyId = null;
-        String secretKey = null;
         String bucketName = uuid + "-" + s3TemplateInput.get(nodeName).get(BUCKET_NAME);
         String s3Url = s3TemplateInput.get(nodeName).get(S3_URL);
-        S3Client s3 = null;
-
-        // Configure S3 client with credentials
-        try {
-          Map<String, Object> vaultOutput =
-              credProvServ.credentialProvider(s3Url.split("//")[1], accessToken);
-          Map<String, String> s3Credentials = (Map<String, String>) vaultOutput.get("data");
-          accessKeyId = s3Credentials.get("aws_access_key");
-          secretKey = s3Credentials.get("aws_secret_key");
-          s3 = S3Client.builder().endpointOverride(URI.create(s3Url))
-              .region(Region.of(AWS_REGION)).forcePathStyle(true)
-              .credentialsProvider(StaticCredentialsProvider
-                  .create(AwsBasicCredentials.create(accessKeyId, secretKey)))
-              .build();
-        } catch (Exception e) {
-          LOG.error(e.getMessage());
-          //deleteAllBuckets(resources);
-          throw e;
-        }
 
         try {
-          // Try to create a bucket
-          createBucket(s3, bucketName);
-          LOG.info("Bucket successfully created: {}", bucketName);
+          s3Service.manageBucketCreation(bucketName, s3Url, accessToken);
+          // Write info in resource metadata
+          Map<String, String> resourceMetadata = new HashMap<>();
+          resourceMetadata.put(BUCKET_NAME, bucketName);
+          resourceMetadata.put(S3_URL, s3Url);
+          resource.setMetadata(resourceMetadata);
         } catch (Exception e) {
-          LOG.error(e.getMessage());
-          deleteAllBuckets(resources, accessToken);
-          throw e;
+          s3Service.deleteAllBuckets(resources, accessToken);
         }
-
-        // Write info in resource metadata
-        Map<String, String> resourceMetadata = new HashMap<>();
-        resourceMetadata.put(BUCKET_NAME, bucketName);
-        resourceMetadata.put(S3_URL, s3Url);
-        resource.setMetadata(resourceMetadata);
       }
     }
 
@@ -934,7 +841,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
     iamService.deleteAllClients(restTemplate, resources, deploymentMessage.isForce());
 
     // Delete all buckets clients if there are resources of type S3_TOSCA_NODE_TYPE
-    deleteAllBuckets(resources, accessToken);
+    s3Service.deleteAllBuckets(resources, accessToken);
 
     return true;
   }

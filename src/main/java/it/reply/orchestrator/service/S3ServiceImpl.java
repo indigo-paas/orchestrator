@@ -121,8 +121,8 @@ public class S3ServiceImpl implements S3Service {
         Map<String, Object> vaultOutput =
             credProvServ.credentialProvider(s3Url.split("//")[1], accessToken);
         Map<String, String> s3Credentials = (Map<String, String>) vaultOutput.get("data");
-        accessKeyId = s3Credentials.get("aws_access_key");
-        secretKey = s3Credentials.get("aws_secret_key");
+        accessKeyId = s3Credentials.get(AWS_ACCESS_KEY);
+        secretKey = s3Credentials.get(AWS_SECRET_KEY);
 
         s3 = S3Client.builder().endpointOverride(URI.create(s3Url)).region(Region.of(AWS_REGION))
             .forcePathStyle(true).credentialsProvider(StaticCredentialsProvider

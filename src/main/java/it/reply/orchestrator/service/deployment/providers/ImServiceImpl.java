@@ -150,10 +150,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
 
   private static final String S3_TOSCA_NODE_TYPE = "tosca.nodes.indigo.S3Bucket";
   private static final String BUCKET_NAME = "bucket_name";
-  private static final String AWS_ACCESS_KEY = "aws_access_key";
-  private static final String AWS_SECRET_KEY = "aws_secret_key";
   private static final String S3_URL = "s3_url";
-  private static final String AWS_REGION = "us-east-1";
 
   protected <R> R executeWithClientForResult(List<CloudProviderEndpoint> cloudProviderEndpoints,
       @Nullable OidcTokenId requestedWithToken,

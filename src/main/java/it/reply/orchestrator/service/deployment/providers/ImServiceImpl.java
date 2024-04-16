@@ -162,7 +162,6 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
   private static final String S3_URL = "s3_url";
   private static final String AWS_REGION = "us-east-1";
 
-
   private static void createBucket(S3Client s3, String bucketName) {
     CreateBucketRequest createBucketRequest =
         CreateBucketRequest.builder().bucket(bucketName).build();
@@ -190,15 +189,15 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           // Configure S3 client with credentials
           try {
             Map<String, Object> vaultOutput =
-              credProvServ.credentialProvider(s3Url.split("//")[1], accessToken);
-          Map<String, String> s3Credentials = (Map<String, String>) vaultOutput.get("data");
-          accessKeyId = s3Credentials.get("aws_access_key");
-          secretKey = s3Credentials.get("aws_secret_key");
+                credProvServ.credentialProvider(s3Url.split("//")[1], accessToken);
+            Map<String, String> s3Credentials = (Map<String, String>) vaultOutput.get("data");
+            accessKeyId = s3Credentials.get("aws_access_key");
+            secretKey = s3Credentials.get("aws_secret_key");
 
             s3 = S3Client.builder().endpointOverride(URI.create(s3Url))
                 .region(Region.of(AWS_REGION)).forcePathStyle(true)
-                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(
-                  accessKeyId, secretKey)))
+                .credentialsProvider(StaticCredentialsProvider
+                    .create(AwsBasicCredentials.create(accessKeyId, secretKey)))
                 .build();
           } catch (Exception e) {
             LOG.error(e.getMessage());
@@ -494,7 +493,6 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
         String bucketName = uuid + "-" + s3TemplateInput.get(nodeName).get(BUCKET_NAME);
         String s3Url = s3TemplateInput.get(nodeName).get(S3_URL);
         S3Client s3 = null;
-
 
         // Configure S3 client with credentials
         try {

@@ -71,18 +71,24 @@ public class CredentialProviderServiceImpl implements CredentialProviderService 
     return vaultService.readSecret(vaultToken, pathVaultComplete, clazz);
   }
 
-  public Map<String, Object> credentialProvider(String serviceId,
-      String accessToken) {
+  /**
+   * Get credentials stored in vault service.
+   *
+   * @param serviceId is CpComputeServiceId of cloud provider
+   * @param accessToken with audience
+   * @return GenericServiceCredential or GenericServiceCredentialWithTenant
+   */
+  public Map<String, Object> credentialProvider(String serviceId, String accessToken) {
 
     String sub = null;
 
     try {
-        sub = JwtUtils.getJwtClaimsSet(JwtUtils.parseJwt(accessToken)).getStringClaim("sub");
-      } catch (ParseException e) {
-        String errorMessage = String.format("Sub not found in user's token. %s", e.getMessage());
-        LOG.error(errorMessage);
-        throw new IamServiceException(errorMessage, e);
-      }
+      sub = JwtUtils.getJwtClaimsSet(JwtUtils.parseJwt(accessToken)).getStringClaim("sub");
+    } catch (ParseException e) {
+      String errorMessage = String.format("Sub not found in user's token. %s", e.getMessage());
+      LOG.error(errorMessage);
+      throw new IamServiceException(errorMessage, e);
+    }
 
     if (serviceId == null || serviceId.isEmpty()) {
       LOG.error("ServiceId is empty.");
@@ -92,16 +98,10 @@ public class CredentialProviderServiceImpl implements CredentialProviderService 
       throw new DeploymentException("Vault service is not configured. Service uri is not present.");
     }
     TokenAuthenticationExtended vaultToken =
-        vaultService.retrieveToken(
-            vaultServiceUri.get(),
-            accessToken
-            );
+        vaultService.retrieveToken(vaultServiceUri.get(), accessToken);
 
-    String pathVaultComplete = vaultServiceUri.get()
-        + "/v1/secrets/data/"
-        + sub
-        + vaultService.getServicePath()
-        + serviceId;
+    String pathVaultComplete = vaultServiceUri.get() + "/v1/secrets/data/" + sub
+        + vaultService.getServicePath() + serviceId;
 
     return vaultService.readSecret(vaultToken, pathVaultComplete);
   }

@@ -54,6 +54,7 @@ import it.reply.orchestrator.enums.Task;
 import it.reply.orchestrator.exception.http.BadRequestException;
 import it.reply.orchestrator.exception.service.BusinessWorkflowException;
 import it.reply.orchestrator.exception.service.DeploymentException;
+import it.reply.orchestrator.exception.service.S3ServiceException;
 import it.reply.orchestrator.function.ThrowingConsumer;
 import it.reply.orchestrator.function.ThrowingFunction;
 import it.reply.orchestrator.service.IamService;
@@ -412,24 +413,47 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
       // Create S3 buckets
       if (resource.getToscaNodeType().equals(S3_TOSCA_NODE_TYPE)) {
         String nodeName = resource.getToscaNodeName();
+        String bucketName = null;
+        String s3Url = null;
         LOG.info("Found node of type: {}. Node name: {}", S3_TOSCA_NODE_TYPE, nodeName);
 
         if (s3TemplateInput == null) {
           s3TemplateInput = toscaService.getS3Properties(ar);
         }
 
-        String bucketName = uuid + "-" + s3TemplateInput.get(nodeName).get(BUCKET_NAME);
-        String s3Url = s3TemplateInput.get(nodeName).get(S3_URL);
-
         try {
+          bucketName = s3TemplateInput.get(nodeName).get(BUCKET_NAME);
+          if (bucketName == null || bucketName.isEmpty()) {
+            String errorMessage = "Bucket name not provided or empty";
+            LOG.error(errorMessage);
+            throw new IllegalArgumentException(errorMessage);
+          } else {
+            bucketName = uuid + "-" + bucketName;
+          }
+          s3Url = s3TemplateInput.get(nodeName).get(S3_URL);
+          if (s3Url == null || s3Url.isEmpty()) {
+            String errorMessage = "S3 URL not provided or empty";
+            LOG.error(errorMessage);
+            throw new IllegalArgumentException(errorMessage);
+          }
+
           s3Service.manageBucketCreation(bucketName, s3Url, accessToken);
+          LOG.info("Bucket successfully created: {}", bucketName);
           // Write info in resource metadata
           Map<String, String> resourceMetadata = new HashMap<>();
           resourceMetadata.put(BUCKET_NAME, bucketName);
           resourceMetadata.put(S3_URL, s3Url);
           resource.setMetadata(resourceMetadata);
-        } catch (Exception e) {
-          s3Service.deleteAllBuckets(resources, accessToken);
+        } catch (Throwable e) {
+          String errorMessage = String.format(
+              "Failure in the creation process of an S3 bucket with bucket name %s, using S3 URL %s",
+              bucketName, s3Url);
+          LOG.error(errorMessage);
+          try {
+            s3Service.deleteAllBuckets(resources, accessToken);
+          } catch (S3ServiceException e1) {
+          }
+          throw new RuntimeException(e.getMessage());
         }
       }
     }
@@ -838,8 +862,11 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
     iamService.deleteAllClients(restTemplate, resources, deploymentMessage.isForce());
 
     // Delete all buckets clients if there are resources of type S3_TOSCA_NODE_TYPE
-    s3Service.deleteAllBuckets(resources, accessToken);
+    try {
+      s3Service.deleteAllBuckets(resources, accessToken);
+    } catch (S3ServiceException e){
 
+    }
     return true;
   }
 

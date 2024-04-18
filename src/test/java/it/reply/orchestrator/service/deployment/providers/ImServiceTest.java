@@ -60,6 +60,7 @@ import it.reply.orchestrator.exception.service.DeploymentException;
 import it.reply.orchestrator.exception.service.ToscaException;
 import it.reply.orchestrator.function.ThrowingFunction;
 import it.reply.orchestrator.service.IamService;
+import it.reply.orchestrator.service.S3Service;
 import it.reply.orchestrator.service.ToscaServiceImpl;
 import it.reply.orchestrator.service.deployment.providers.factory.ImClientFactory;
 import it.reply.orchestrator.util.TestUtil;
@@ -106,6 +107,9 @@ public class ImServiceTest extends ToscaParserAwareTest {
 
   @MockBean
   private IamService iamService;
+
+  @MockBean
+  private S3Service s3Service;
 
   @MockBean
   private DeploymentRepository deploymentRepository;

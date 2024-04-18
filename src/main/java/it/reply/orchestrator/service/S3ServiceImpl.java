@@ -81,24 +81,26 @@ public class S3ServiceImpl implements S3Service {
     for (Resource resource : resources.get(false)) {
       if (resource.getToscaNodeType().equals(S3_TOSCA_NODE_TYPE)) {
         Map<String, String> resourceMetadata = resource.getMetadata();
-        String bucketName = resourceMetadata.get(BUCKET_NAME);
-        String s3Url = resourceMetadata.get(S3_URL);
-        S3Client s3 = setupS3Client(s3Url, accessToken);
+        if (resourceMetadata != null) {
+          String bucketName = resourceMetadata.get(BUCKET_NAME);
+          String s3Url = resourceMetadata.get(S3_URL);
+          S3Client s3 = setupS3Client(s3Url, accessToken);
 
-        // Delete S3 bucket
-        try {
-          LOG.info("Deleting bucket with name {}", bucketName);
-          deleteBucket(s3, bucketName);
-          LOG.info("Bucket {} successfully deleted", bucketName);
-        } catch (NoSuchBucketException e) {
-          LOG.warn("Bucket {} was not found", bucketName);
-        } catch (Exception e) {
-          LOG.error(e.getMessage());
-          throw e;
+          // Delete S3 bucket
+          try {
+            LOG.info("Deleting bucket with name {}", bucketName);
+            deleteBucket(s3, bucketName);
+            LOG.info("Bucket {} successfully deleted", bucketName);
+          } catch (NoSuchBucketException e) {
+            LOG.warn("Bucket {} was not found", bucketName);
+          } catch (Exception e) {
+            LOG.error(e.getMessage());
+            throw e;
+          }
+        } else {
+          LOG.info("Found node of type {} but no bucket info is registered in metadata",
+              S3_TOSCA_NODE_TYPE);
         }
-      } else {
-        LOG.info("Found node of type {} but no bucket info is registered in metadata",
-            S3_TOSCA_NODE_TYPE);
       }
     }
   }
@@ -115,7 +117,6 @@ public class S3ServiceImpl implements S3Service {
     String accessKeyId = null;
     String secretKey = null;
     if (s3Url != null) {
-
       // Configure S3 client with credentials
       try {
         Map<String, Object> vaultOutput =

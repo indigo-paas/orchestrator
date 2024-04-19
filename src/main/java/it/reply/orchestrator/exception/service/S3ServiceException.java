@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
- package it.reply.orchestrator.exception.service;
+package it.reply.orchestrator.exception.service;
 
- public class S3ServiceException extends Exception {
- 
-   public S3ServiceException(String message) {
-     super(message);
-   }
- 
-   public S3ServiceException(String message, Throwable e) {
-     super(message, e);
-   }
- }
+public class S3ServiceException extends Exception {
+
+  public S3ServiceException(String message) {
+    super(message);
+  }
+
+  public S3ServiceException(String message, Throwable e) {
+    super(message, e);
+  }
+}

@@ -24,7 +24,9 @@ import java.util.Set;
 
 public interface S3Service {
 
-  public void deleteAllBuckets(Map<Boolean, Set<Resource>> resources, String accessToken) throws S3ServiceException;
+  public void deleteAllBuckets(Map<Boolean, Set<Resource>> resources, String accessToken,
+      Boolean force) throws S3ServiceException;
 
-  public void manageBucketCreation(String bucketName, String s3Url, String accessToken) throws S3ServiceException;
+  public void manageBucketCreation(String bucketName, String s3Url, String accessToken)
+      throws S3ServiceException;
 }

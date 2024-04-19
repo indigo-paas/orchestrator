@@ -153,6 +153,13 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
   private static final String BUCKET_NAME = "bucket_name";
   private static final String S3_URL = "s3_url";
 
+  private void deleteExternalResources(RestTemplate restTemplate,
+      Map<Boolean, Set<Resource>> resources, Boolean isForce, String accessToken)
+      throws S3ServiceException {
+    iamService.deleteAllClients(restTemplate, resources, isForce);
+    s3Service.deleteAllBuckets(resources, accessToken, isForce);
+  }
+
   protected <R> R executeWithClientForResult(List<CloudProviderEndpoint> cloudProviderEndpoints,
       @Nullable OidcTokenId requestedWithToken,
       ThrowingFunction<InfrastructureManager, R, ImClientException> function)
@@ -446,14 +453,20 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           resource.setMetadata(resourceMetadata);
         } catch (Throwable e) {
           String errorMessage = String.format(
-              "Failure in the creation process of an S3 bucket with bucket name %s, using S3 URL %s",
-              bucketName, s3Url);
+              "Failure in the creation process of an S3 bucket with bucket name %s, "
+              + "using S3 URL %s. %s", bucketName, s3Url, e.getMessage());
           LOG.error(errorMessage);
           try {
-            s3Service.deleteAllBuckets(resources, accessToken);
+            LOG.info("Deleting all the created buckets");
+            deleteExternalResources(restTemplate, resources, deploymentMessage.isForce(),
+                accessToken);
           } catch (S3ServiceException e1) {
+            String errorMessage2 = String
+                .format("Failure in the deletion of external resources. %s", e.getMessage());
+            LOG.error(errorMessage2);
+            throw new RuntimeException(e1.getMessage(), e1);
           }
-          throw new RuntimeException(e.getMessage());
+          throw new RuntimeException(e.getMessage(), e);
         }
       }
     }
@@ -863,9 +876,12 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
 
     // Delete all buckets clients if there are resources of type S3_TOSCA_NODE_TYPE
     try {
-      s3Service.deleteAllBuckets(resources, accessToken);
-    } catch (S3ServiceException e){
-
+      s3Service.deleteAllBuckets(resources, accessToken, deploymentMessage.isForce());
+    } catch (S3ServiceException e) {
+      String errorMessage =
+          String.format("Failure in the deletion of all the created buckets. %s", e.getMessage());
+      LOG.error(errorMessage);
+      throw new RuntimeException(e.getMessage(), e);
     }
     return true;
   }

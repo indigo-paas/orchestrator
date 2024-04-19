@@ -53,7 +53,7 @@ public class S3ServiceImpl implements S3Service {
    *
    * @param s3 the S3 Client
    * @param bucketName the name of the bucket to create
-   * @throws S3ServiceException
+   * @throws S3ServiceException when fails to create the bucket
    */
   private static void createBucket(S3Client s3, String bucketName) throws S3ServiceException {
     try {
@@ -71,9 +71,9 @@ public class S3ServiceImpl implements S3Service {
   /**
    * Delete a bucket.
    *
-   * @param s3 the S3 Client
+   * @param s3Client the S3 Client
    * @param bucketName the name of the bucket to delete
-   * @throws S3ServiceException
+   * @throws S3ServiceException when fails to delete the bucket
    */
   public static void deleteBucket(S3Client s3Client, String bucketName) throws S3ServiceException {
     LOG.info("Deleting bucket with name {}", bucketName);
@@ -81,6 +81,7 @@ public class S3ServiceImpl implements S3Service {
       DeleteBucketRequest deleteBucketRequest =
           DeleteBucketRequest.builder().bucket(bucketName).build();
       s3Client.deleteBucket(deleteBucketRequest);
+      LOG.info("Bucket {} successfully deleted", bucketName);
     } catch (NoSuchBucketException e) {
       LOG.warn("Bucket {} was not found", bucketName);
     } catch (RuntimeException e) {
@@ -89,7 +90,6 @@ public class S3ServiceImpl implements S3Service {
       LOG.error(errorMessage);
       throw new S3ServiceException(errorMessage, e);
     }
-    LOG.info("Bucket {} successfully deleted", bucketName);
   }
 
   /**
@@ -97,18 +97,22 @@ public class S3ServiceImpl implements S3Service {
    *
    * @param resources object used to make HTTP requests
    * @param accessToken the identity provider
-   * @throws S3ServiceException
+   * @throws S3ServiceException when fails to delete a bucket
    */
-  public void deleteAllBuckets(Map<Boolean, Set<Resource>> resources, String accessToken)
-      throws S3ServiceException {
+  public void deleteAllBuckets(Map<Boolean, Set<Resource>> resources, String accessToken,
+      Boolean force) throws S3ServiceException {
+    if (Boolean.TRUE.equals(force)) {
+      LOG.info("Skipping deletion of S3 buckets");
+      return;
+    }
     for (Resource resource : resources.get(false)) {
       if (resource.getToscaNodeType().equals(S3_TOSCA_NODE_TYPE)) {
         Map<String, String> resourceMetadata = resource.getMetadata();
-        S3Client s3Client = null;
-        if (resourceMetadata != null) {
+        if (resourceMetadata != null && resourceMetadata.containsKey(BUCKET_NAME)
+            && resourceMetadata.containsKey(S3_URL)) {
           String bucketName = resourceMetadata.get(BUCKET_NAME);
           String s3Url = resourceMetadata.get(S3_URL);
-          s3Client = setupS3Client(s3Url, accessToken);
+          S3Client s3Client = setupS3Client(s3Url, accessToken);
           // Delete the bucket
           deleteBucket(s3Client, bucketName);
         } else {
@@ -125,7 +129,7 @@ public class S3ServiceImpl implements S3Service {
    * @param s3Url the S3 URL
    * @param accessToken the user's accessToken
    * @return the S3Client object
-   * @throws S3ServiceException
+   * @throws S3ServiceException when fails to create an S3Client object
    */
   private S3Client setupS3Client(String s3Url, String accessToken) throws S3ServiceException {
     S3Client s3Client = null;
@@ -140,7 +144,8 @@ public class S3ServiceImpl implements S3Service {
       accessKeyId = s3Credentials.get(AWS_ACCESS_KEY);
       secretKey = s3Credentials.get(AWS_SECRET_KEY);
     } catch (RuntimeException e) {
-      String errorMessage = "Cannot access and get credentials from Vault";
+      String errorMessage =
+          String.format("Cannot access and get credentials from Vault. %s", e.getMessage());
       LOG.error(errorMessage);
       throw new S3ServiceException(errorMessage, e);
     }
@@ -153,7 +158,8 @@ public class S3ServiceImpl implements S3Service {
               StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKeyId, secretKey)))
           .build();
     } catch (RuntimeException e) {
-      String errorMessage = "Cannot create an S3Client using the credentials read from Vault";
+      String errorMessage = String.format(
+          "Cannot create an S3Client using the credentials read from Vault. %s", e.getMessage());
       LOG.error(errorMessage);
       throw new S3ServiceException(errorMessage, e);
     }
@@ -165,7 +171,7 @@ public class S3ServiceImpl implements S3Service {
    *
    * @param bucketName the name of the bucket to create
    * @param accessToken the user's accessToken
-   * @throws S3ServiceException
+   * @throws S3ServiceException when fails to create a bucket
    */
   public void manageBucketCreation(String bucketName, String s3Url, String accessToken)
       throws S3ServiceException {

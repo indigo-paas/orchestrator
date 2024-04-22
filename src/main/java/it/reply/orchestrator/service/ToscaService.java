@@ -44,6 +44,12 @@ import org.jgrapht.graph.DirectedMultigraph;
 
 public interface ToscaService {
 
+  public String getS3ToscaNodeType();
+
+  public String getBucketNameProperty();
+
+  public String getS3UrlProperty();
+
   /**
    * Obtain the string TOSCA template representation from the in-memory representation.
    *

@@ -414,18 +414,19 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
       }
 
       // Create S3 buckets
-      if (resource.getToscaNodeType().equals(s3Service.getS3ToscaNodeType())) {
+      if (resource.getToscaNodeType().equals(toscaService.getS3ToscaNodeType())) {
         String nodeName = resource.getToscaNodeName();
         String bucketName = null;
         String s3Url = null;
-        LOG.info("Found node of type: {}. Node name: {}", s3Service.getS3ToscaNodeType(), nodeName);
+        LOG.info("Found node of type: {}. Node name: {}", toscaService.getS3ToscaNodeType(),
+            nodeName);
 
         if (s3TemplateInput == null) {
           s3TemplateInput = toscaService.getS3Properties(ar);
         }
 
         try {
-          bucketName = s3TemplateInput.get(nodeName).get(s3Service.getBucketNameProperty());
+          bucketName = s3TemplateInput.get(nodeName).get(toscaService.getBucketNameProperty());
           if (bucketName == null || bucketName.isEmpty()) {
             String errorMessage = "Bucket name not provided or empty";
             LOG.error(errorMessage);
@@ -433,7 +434,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           } else {
             bucketName = uuid + "-" + bucketName;
           }
-          s3Url = s3TemplateInput.get(nodeName).get(s3Service.getS3UrlProperty());
+          s3Url = s3TemplateInput.get(nodeName).get(toscaService.getS3UrlProperty());
           if (s3Url == null || s3Url.isEmpty()) {
             String errorMessage = "S3 URL not provided or empty";
             LOG.error(errorMessage);
@@ -444,8 +445,8 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           LOG.info("Bucket successfully created: {}", bucketName);
           // Write info in resource metadata
           Map<String, String> resourceMetadata = new HashMap<>();
-          resourceMetadata.put(s3Service.getBucketNameProperty(), bucketName);
-          resourceMetadata.put(s3Service.getS3UrlProperty(), s3Url);
+          resourceMetadata.put(toscaService.getBucketNameProperty(), bucketName);
+          resourceMetadata.put(toscaService.getS3UrlProperty(), s3Url);
           resource.setMetadata(resourceMetadata);
         } catch (Throwable e) {
           String errorMessage = String.format(

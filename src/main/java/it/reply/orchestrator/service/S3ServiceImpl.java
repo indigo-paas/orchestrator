@@ -48,18 +48,6 @@ public class S3ServiceImpl implements S3Service {
   private static final String AWS_SECRET_KEY = "aws_secret_key";
   private static final String AWS_REGION = "us-east-1";
 
-  public String getS3ToscaNodeType() {
-    return S3_TOSCA_NODE_TYPE;
-  }
-
-  public String getBucketNameProperty() {
-    return BUCKET_NAME_PROPERTY;
-  }
-
-  public String getS3UrlProperty() {
-    return S3_URL_PROPERTY;
-  }
-
   /**
    * Create a bucket.
    *

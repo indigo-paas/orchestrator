@@ -118,8 +118,8 @@ public class ToscaServiceImpl implements ToscaService {
   private static final String REGISTRATION_ACCESS_TOKEN = "registration_access_token";
 
   private static final String S3_TOSCA_NODE_TYPE = "tosca.nodes.indigo.S3Bucket";
-  private static final String BUCKET_NAME = "bucket_name";
-  private static final String S3_URL = "s3_url";
+  private static final String BUCKET_NAME_PROPERTY = "bucket_name";
+  private static final String S3_URL_PROPERTY = "s3_url";
 
   @Autowired
   private IndigoInputsPreProcessorService indigoInputsPreProcessorService;
@@ -132,6 +132,18 @@ public class ToscaServiceImpl implements ToscaService {
 
   @Autowired
   private TemplateParser templateParser;
+
+  public String getS3ToscaNodeType() {
+    return S3_TOSCA_NODE_TYPE;
+  }
+
+  public String getBucketNameProperty() {
+    return BUCKET_NAME_PROPERTY;
+  }
+
+  public String getS3UrlProperty() {
+    return S3_URL_PROPERTY;
+  }
 
   @Override
   public void replaceInputFunctions(ArchiveRoot archiveRoot, Map<String, Object> inputs) {
@@ -1292,18 +1304,20 @@ public class ToscaServiceImpl implements ToscaService {
 
       String bucketName = null;
       String s3Url = null;
-      if (properties.containsKey(BUCKET_NAME)) {
-        ScalarPropertyValue scalarPropertyValue = (ScalarPropertyValue) properties.get(BUCKET_NAME);
+      if (properties.containsKey(BUCKET_NAME_PROPERTY)) {
+        ScalarPropertyValue scalarPropertyValue =
+            (ScalarPropertyValue) properties.get(BUCKET_NAME_PROPERTY);
         bucketName = scalarPropertyValue.getValue();
       }
-      if (properties.containsKey(S3_URL)) {
-        ScalarPropertyValue scalarPropertyValue = (ScalarPropertyValue) properties.get(S3_URL);
+      if (properties.containsKey(S3_URL_PROPERTY)) {
+        ScalarPropertyValue scalarPropertyValue =
+            (ScalarPropertyValue) properties.get(S3_URL_PROPERTY);
         s3Url = scalarPropertyValue.getValue();
       }
 
       Map<String, String> innerMap = new HashMap<>();
-      innerMap.put(BUCKET_NAME, bucketName);
-      innerMap.put(S3_URL, s3Url);
+      innerMap.put(BUCKET_NAME_PROPERTY, bucketName);
+      innerMap.put(S3_URL_PROPERTY, s3Url);
       String nodeName = s3Node.getName();
       nodeProperties.put(nodeName, innerMap);
     });

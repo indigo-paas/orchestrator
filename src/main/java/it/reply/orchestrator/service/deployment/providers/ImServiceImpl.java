@@ -149,10 +149,6 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
   public static final String OWNER = "owner";
   private static final String CLIENT_ID = "client_id";
 
-  private static final String S3_TOSCA_NODE_TYPE = "tosca.nodes.indigo.S3Bucket";
-  private static final String BUCKET_NAME = "bucket_name";
-  private static final String S3_URL = "s3_url";
-
   private void deleteExternalResources(RestTemplate restTemplate,
       Map<Boolean, Set<Resource>> resources, Boolean isForce, String accessToken)
       throws S3ServiceException {
@@ -418,18 +414,18 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
       }
 
       // Create S3 buckets
-      if (resource.getToscaNodeType().equals(S3_TOSCA_NODE_TYPE)) {
+      if (resource.getToscaNodeType().equals(s3Service.getS3ToscaNodeType())) {
         String nodeName = resource.getToscaNodeName();
         String bucketName = null;
         String s3Url = null;
-        LOG.info("Found node of type: {}. Node name: {}", S3_TOSCA_NODE_TYPE, nodeName);
+        LOG.info("Found node of type: {}. Node name: {}", s3Service.getS3ToscaNodeType(), nodeName);
 
         if (s3TemplateInput == null) {
           s3TemplateInput = toscaService.getS3Properties(ar);
         }
 
         try {
-          bucketName = s3TemplateInput.get(nodeName).get(BUCKET_NAME);
+          bucketName = s3TemplateInput.get(nodeName).get(s3Service.getBucketNameProperty());
           if (bucketName == null || bucketName.isEmpty()) {
             String errorMessage = "Bucket name not provided or empty";
             LOG.error(errorMessage);
@@ -437,7 +433,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           } else {
             bucketName = uuid + "-" + bucketName;
           }
-          s3Url = s3TemplateInput.get(nodeName).get(S3_URL);
+          s3Url = s3TemplateInput.get(nodeName).get(s3Service.getS3UrlProperty());
           if (s3Url == null || s3Url.isEmpty()) {
             String errorMessage = "S3 URL not provided or empty";
             LOG.error(errorMessage);
@@ -448,8 +444,8 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           LOG.info("Bucket successfully created: {}", bucketName);
           // Write info in resource metadata
           Map<String, String> resourceMetadata = new HashMap<>();
-          resourceMetadata.put(BUCKET_NAME, bucketName);
-          resourceMetadata.put(S3_URL, s3Url);
+          resourceMetadata.put(s3Service.getBucketNameProperty(), bucketName);
+          resourceMetadata.put(s3Service.getS3UrlProperty(), s3Url);
           resource.setMetadata(resourceMetadata);
         } catch (Throwable e) {
           String errorMessage = String.format(

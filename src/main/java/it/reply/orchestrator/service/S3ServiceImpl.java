@@ -42,11 +42,23 @@ public class S3ServiceImpl implements S3Service {
   private CredentialProviderService credProvServ;
 
   private static final String S3_TOSCA_NODE_TYPE = "tosca.nodes.indigo.S3Bucket";
-  private static final String BUCKET_NAME = "bucket_name";
+  private static final String BUCKET_NAME_PROPERTY = "bucket_name";
+  private static final String S3_URL_PROPERTY = "s3_url";
   private static final String AWS_ACCESS_KEY = "aws_access_key";
   private static final String AWS_SECRET_KEY = "aws_secret_key";
-  private static final String S3_URL = "s3_url";
   private static final String AWS_REGION = "us-east-1";
+
+  public String getS3ToscaNodeType() {
+    return S3_TOSCA_NODE_TYPE;
+  }
+
+  public String getBucketNameProperty() {
+    return BUCKET_NAME_PROPERTY;
+  }
+
+  public String getS3UrlProperty() {
+    return S3_URL_PROPERTY;
+  }
 
   /**
    * Create a bucket.
@@ -108,10 +120,10 @@ public class S3ServiceImpl implements S3Service {
     for (Resource resource : resources.get(false)) {
       if (resource.getToscaNodeType().equals(S3_TOSCA_NODE_TYPE)) {
         Map<String, String> resourceMetadata = resource.getMetadata();
-        if (resourceMetadata != null && resourceMetadata.containsKey(BUCKET_NAME)
-            && resourceMetadata.containsKey(S3_URL)) {
-          String bucketName = resourceMetadata.get(BUCKET_NAME);
-          String s3Url = resourceMetadata.get(S3_URL);
+        if (resourceMetadata != null && resourceMetadata.containsKey(BUCKET_NAME_PROPERTY)
+            && resourceMetadata.containsKey(S3_URL_PROPERTY)) {
+          String bucketName = resourceMetadata.get(BUCKET_NAME_PROPERTY);
+          String s3Url = resourceMetadata.get(S3_URL_PROPERTY);
           S3Client s3Client = setupS3Client(s3Url, accessToken);
           // Delete the bucket
           deleteBucket(s3Client, bucketName);

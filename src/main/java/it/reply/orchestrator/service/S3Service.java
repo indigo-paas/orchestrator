@@ -24,6 +24,12 @@ import java.util.Set;
 
 public interface S3Service {
 
+  public String getS3ToscaNodeType();
+
+  public String getBucketNameProperty();
+
+  public String getS3UrlProperty();
+
   public void deleteAllBuckets(Map<Boolean, Set<Resource>> resources, String accessToken,
       Boolean force) throws S3ServiceException;
 

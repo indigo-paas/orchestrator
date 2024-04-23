@@ -413,7 +413,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
         }
       }
 
-      // Create S3 buckets
+      // Manage creation of an S3 bucket
       if (resource.getToscaNodeType().equals(toscaService.getS3ToscaNodeType())) {
         String nodeName = resource.getToscaNodeName();
         String bucketName = null;
@@ -435,12 +435,14 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           } else {
             bucketName = uuid + "-" + bucketName;
           }
+
           s3Url = s3TemplateInput.get(nodeName).get(toscaService.getS3UrlProperty());
           if (s3Url == null || s3Url.isEmpty()) {
             String errorMessage = "S3 URL not provided or empty";
             LOG.error(errorMessage);
             throw new IllegalArgumentException(errorMessage);
           }
+
           enableVersioning =
               s3TemplateInput.get(nodeName).get(toscaService.getEnableVersioningProperty());
           if (enableVersioning == null || enableVersioning.isEmpty()) {
@@ -449,12 +451,14 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
             throw new IllegalArgumentException(errorMessage);
           }
 
-          s3Service.manageBucketCreation(bucketName, s3Url, enableVersioning, accessToken);
           // Write info in resource metadata
           Map<String, String> resourceMetadata = new HashMap<>();
           resourceMetadata.put(toscaService.getBucketNameProperty(), bucketName);
           resourceMetadata.put(toscaService.getS3UrlProperty(), s3Url);
           resource.setMetadata(resourceMetadata);
+
+          // Create the S3 bucket
+          s3Service.manageBucketCreation(bucketName, s3Url, enableVersioning, accessToken);
         } catch (Throwable e) {
           String errorMessage = String.format(
               "Failure in the creation process of an S3 bucket with bucket name %s, "

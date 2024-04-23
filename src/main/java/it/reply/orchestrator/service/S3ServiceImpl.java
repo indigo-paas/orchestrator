@@ -52,7 +52,7 @@ public class S3ServiceImpl implements S3Service {
   private static final String AWS_REGION = "us-east-1";
 
   /**
-   * Create a bucket.
+   * Create a bucket and enable versioning if needed.
    *
    * @param s3 the S3 Client
    * @param bucketName the name of the bucket to create

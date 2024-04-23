@@ -418,6 +418,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
         String nodeName = resource.getToscaNodeName();
         String bucketName = null;
         String s3Url = null;
+        String enableVersioning = null;
         LOG.info("Found node of type: {}. Node name: {}", toscaService.getS3ToscaNodeType(),
             nodeName);
 
@@ -440,9 +441,15 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
             LOG.error(errorMessage);
             throw new IllegalArgumentException(errorMessage);
           }
+          enableVersioning =
+              s3TemplateInput.get(nodeName).get(toscaService.getEnableVersioningProperty());
+          if (enableVersioning == null || enableVersioning.isEmpty()) {
+            String errorMessage = "Enable versioning property not provided or empty";
+            LOG.error(errorMessage);
+            throw new IllegalArgumentException(errorMessage);
+          }
 
-          s3Service.manageBucketCreation(bucketName, s3Url, accessToken);
-          LOG.info("Bucket successfully created: {}", bucketName);
+          s3Service.manageBucketCreation(bucketName, s3Url, enableVersioning, accessToken);
           // Write info in resource metadata
           Map<String, String> resourceMetadata = new HashMap<>();
           resourceMetadata.put(toscaService.getBucketNameProperty(), bucketName);

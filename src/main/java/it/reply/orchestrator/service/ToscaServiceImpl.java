@@ -120,6 +120,7 @@ public class ToscaServiceImpl implements ToscaService {
   private static final String S3_TOSCA_NODE_TYPE = "tosca.nodes.indigo.S3Bucket";
   private static final String BUCKET_NAME_PROPERTY = "bucket_name";
   private static final String S3_URL_PROPERTY = "s3_url";
+  private static final String ENABLE_VERSIONING = "enable_versioning";
 
   @Autowired
   private IndigoInputsPreProcessorService indigoInputsPreProcessorService;
@@ -143,6 +144,10 @@ public class ToscaServiceImpl implements ToscaService {
 
   public String getS3UrlProperty() {
     return S3_URL_PROPERTY;
+  }
+
+  public String getEnableVersioningProperty() {
+    return ENABLE_VERSIONING;
   }
 
   @Override
@@ -1304,6 +1309,7 @@ public class ToscaServiceImpl implements ToscaService {
 
       String bucketName = null;
       String s3Url = null;
+      String enableVersioning = null;
       if (properties.containsKey(BUCKET_NAME_PROPERTY)) {
         ScalarPropertyValue scalarPropertyValue =
             (ScalarPropertyValue) properties.get(BUCKET_NAME_PROPERTY);
@@ -1314,10 +1320,16 @@ public class ToscaServiceImpl implements ToscaService {
             (ScalarPropertyValue) properties.get(S3_URL_PROPERTY);
         s3Url = scalarPropertyValue.getValue();
       }
+      if (properties.containsKey(ENABLE_VERSIONING)) {
+        ScalarPropertyValue scalarPropertyValue =
+            (ScalarPropertyValue) properties.get(ENABLE_VERSIONING);
+        enableVersioning = scalarPropertyValue.getValue();
+      }
 
       Map<String, String> innerMap = new HashMap<>();
       innerMap.put(BUCKET_NAME_PROPERTY, bucketName);
       innerMap.put(S3_URL_PROPERTY, s3Url);
+      innerMap.put(ENABLE_VERSIONING, enableVersioning);
       String nodeName = s3Node.getName();
       nodeProperties.put(nodeName, innerMap);
     });

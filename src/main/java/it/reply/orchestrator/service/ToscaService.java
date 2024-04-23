@@ -50,6 +50,8 @@ public interface ToscaService {
 
   public String getS3UrlProperty();
 
+  public String getEnableVersioningProperty();
+
   /**
    * Obtain the string TOSCA template representation from the in-memory representation.
    *

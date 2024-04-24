@@ -52,33 +52,48 @@ public class S3ServiceImpl implements S3Service {
   private static final String AWS_REGION = "us-east-1";
 
   /**
-   * Create a bucket and enable versioning if needed.
+   * Enable bucket versioning.
    *
-   * @param s3 the S3 Client
+   * @param s3Client the S3 Client
+   * @param bucketName the name of the bucket to create
+   * @throws S3ServiceException when fails to enable bucket versioning
+   */
+  public void enableBucketVersioning(S3Client s3Client, String bucketName)
+      throws S3ServiceException {
+    try {
+      PutBucketVersioningRequest request = PutBucketVersioningRequest.builder().bucket(bucketName)
+          .versioningConfiguration(conf -> conf.status(BucketVersioningStatus.ENABLED)).build();
+      s3Client.putBucketVersioning(request);
+      GetBucketVersioningResponse response =
+          s3Client.getBucketVersioning(builder -> builder.bucket(bucketName));
+      if (response.status().equals(BucketVersioningStatus.ENABLED)) {
+        LOG.info("Versioning enabled for bucket " + bucketName);
+      } else {
+        String errorMessage =
+            String.format("Failure to enable versioning for bucket %s", bucketName);
+        LOG.error(errorMessage);
+        throw new RuntimeException(errorMessage);
+      }
+    } catch (RuntimeException e) {
+      String errorMessage = String.format(
+          "Failure in the creation of bucket with bucket name %s. %s", bucketName, e.getMessage());
+      LOG.error(errorMessage);
+      throw new S3ServiceException(errorMessage, e);
+    }
+  }
+
+  /**
+   * Create a bucket.
+   *
+   * @param s3Client the S3 Client
    * @param bucketName the name of the bucket to create
    * @throws S3ServiceException when fails to create the bucket
    */
-  private static void createBucket(S3Client s3Client, String bucketName, String enableVersioning)
-      throws S3ServiceException {
+  private static void createBucket(S3Client s3Client, String bucketName) throws S3ServiceException {
     try {
       CreateBucketRequest createBucketRequest =
           CreateBucketRequest.builder().bucket(bucketName).build();
       s3Client.createBucket(createBucketRequest);
-      if (enableVersioning.equals("true")) {
-        PutBucketVersioningRequest request = PutBucketVersioningRequest.builder().bucket(bucketName)
-            .versioningConfiguration(conf -> conf.status(BucketVersioningStatus.ENABLED)).build();
-        s3Client.putBucketVersioning(request);
-        GetBucketVersioningResponse response =
-            s3Client.getBucketVersioning(builder -> builder.bucket(bucketName));
-        if (response.status() == BucketVersioningStatus.ENABLED) {
-          LOG.info("Versioning enabled for bucket " + bucketName);
-        } else {
-          String errorMessage =
-              String.format("Failure to enable versioning for bucket %s", bucketName);
-          LOG.error(errorMessage);
-          throw new RuntimeException(errorMessage);
-        }
-      }
       LOG.info("Bucket successfully created: {}", bucketName);
     } catch (RuntimeException e) {
       String errorMessage = String.format(
@@ -193,11 +208,12 @@ public class S3ServiceImpl implements S3Service {
    * @param accessToken the user's accessToken
    * @throws S3ServiceException when fails to create a bucket
    */
-  public void manageBucketCreation(String bucketName, String s3Url, String enableVersioning,
-      String accessToken) throws S3ServiceException {
+  public S3Client manageBucketCreation(String bucketName, String s3Url, String accessToken)
+      throws S3ServiceException {
     // Try to create an S3Client
     S3Client s3Client = setupS3Client(s3Url, accessToken);
     // Try to create a bucket
-    createBucket(s3Client, bucketName, enableVersioning);
+    createBucket(s3Client, bucketName);
+    return s3Client;
   }
 }

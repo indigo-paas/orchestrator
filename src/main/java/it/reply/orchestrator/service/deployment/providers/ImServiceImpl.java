@@ -97,6 +97,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import software.amazon.awssdk.services.s3.S3Client;
 
 @Service
 @DeploymentProviderQualifier(DeploymentProvider.IM)
@@ -416,6 +417,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
       // Manage creation of an S3 bucket
       if (resource.getToscaNodeType().equals(toscaService.getS3ToscaNodeType())) {
         String nodeName = resource.getToscaNodeName();
+        S3Client s3Client = null;
         String bucketName = null;
         String s3Url = null;
         String enableVersioning = null;
@@ -451,26 +453,31 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
             throw new IllegalArgumentException(errorMessage);
           }
 
-          // Write info in resource metadata
+          // Create an s3Client and the S3 bucket
+          s3Client = s3Service.manageBucketCreation(bucketName, s3Url, accessToken);
+
+          // Write info of the bucket in resource metadata
           Map<String, String> resourceMetadata = new HashMap<>();
           resourceMetadata.put(toscaService.getBucketNameProperty(), bucketName);
           resourceMetadata.put(toscaService.getS3UrlProperty(), s3Url);
           resource.setMetadata(resourceMetadata);
 
-          // Create the S3 bucket
-          s3Service.manageBucketCreation(bucketName, s3Url, enableVersioning, accessToken);
+          // Enable bucket versioning if needed
+          if (enableVersioning.equals("true")) {
+            s3Service.enableBucketVersioning(s3Client, bucketName);
+          }
         } catch (Throwable e) {
-          String errorMessage = String.format(
-              "Failure in the creation process of an S3 bucket with bucket name %s, "
-              + "using S3 URL %s. %s", bucketName, s3Url, e.getMessage());
+          String errorMessage =
+              String.format("Failure in the creation process of an S3 bucket with bucket name %s, "
+                  + "using S3 URL %s. %s", bucketName, s3Url, e.getMessage());
           LOG.error(errorMessage);
           try {
-            LOG.info("Deleting all the created buckets");
+            LOG.info("Deleting all the external resources");
             deleteExternalResources(restTemplate, resources, deploymentMessage.isForce(),
                 accessToken);
           } catch (S3ServiceException e1) {
-            String errorMessage2 = String
-                .format("Failure in the deletion of external resources. %s", e.getMessage());
+            String errorMessage2 =
+                String.format("Failure in the deletion of external resources. %s", e.getMessage());
             LOG.error(errorMessage2);
             throw new RuntimeException(e1.getMessage(), e1);
           }

@@ -285,6 +285,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
     // Define a map of properties of the TOSCA template related to the
     // S3_TOSCA_NODE_TYPE nodes as input of the orchestrator
     Map<String, Map<String, String>> s3TemplateInput = null;
+    Map<String, Map<String, String>> s3TemplateOutput = new HashMap<>();
 
     // Loop over the deployment resources and create an IAM client for all the
     // IAM_TOSCA_NODE_TYPE nodes requested
@@ -417,10 +418,11 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
       // Manage creation of an S3 bucket
       if (resource.getToscaNodeType().equals(toscaService.getS3ToscaNodeType())) {
         String nodeName = resource.getToscaNodeName();
-        S3Client s3Client = null;
+        Map<String, Object> s3Result = null;
         String bucketName = null;
         String s3Url = null;
         String enableVersioning = null;
+        Map<String, String> resourceMetadata = new HashMap<>();
         LOG.info("Found node of type: {}. Node name: {}", toscaService.getS3ToscaNodeType(),
             nodeName);
 
@@ -454,17 +456,20 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           }
 
           // Create an s3Client and the S3 bucket
-          s3Client = s3Service.manageBucketCreation(bucketName, s3Url, accessToken);
+          s3Result = s3Service.manageBucketCreation(bucketName, s3Url, accessToken);
 
           // Write info of the bucket in resource metadata
-          Map<String, String> resourceMetadata = new HashMap<>();
           resourceMetadata.put(toscaService.getBucketNameProperty(), bucketName);
           resourceMetadata.put(toscaService.getS3UrlProperty(), s3Url);
           resource.setMetadata(resourceMetadata);
+          resourceMetadata.put(toscaService.getAwsAccessKey(),
+              (String) s3Result.get("accessKeyId"));
+          resourceMetadata.put(toscaService.getAwsSecretKey(), (String) s3Result.get("secretKey"));
+          s3TemplateOutput.put(nodeName, resourceMetadata);
 
           // Enable bucket versioning if needed
           if (enableVersioning.equals("true")) {
-            s3Service.enableBucketVersioning(s3Client, bucketName);
+            s3Service.enableBucketVersioning((S3Client) s3Result.get("s3Client"), bucketName);
           }
         } catch (Throwable e) {
           String errorMessage =
@@ -488,6 +493,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
 
     // Update the template with properties of IAM_TOSCA_NODE_TYPE nodes
     toscaService.setDeploymentClientIam(ar, iamTemplateOutput);
+    toscaService.setDeploymentS3Buckets(ar, s3TemplateOutput);
 
     String imCustomizedTemplate = toscaService.serialize(ar);
 

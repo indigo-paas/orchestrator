@@ -21,6 +21,7 @@ import it.reply.orchestrator.dal.entity.Resource;
 import it.reply.orchestrator.exception.service.S3ServiceException;
 import it.reply.orchestrator.service.deployment.providers.CredentialProviderService;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
@@ -147,7 +148,8 @@ public class S3ServiceImpl implements S3Service {
             && resourceMetadata.containsKey(S3_URL_PROPERTY)) {
           String bucketName = resourceMetadata.get(BUCKET_NAME_PROPERTY);
           String s3Url = resourceMetadata.get(S3_URL_PROPERTY);
-          S3Client s3Client = setupS3Client(s3Url, accessToken);
+          Map<String, Object> result = setupS3Client(s3Url, accessToken);
+          S3Client s3Client = (S3Client) result.get("s3Client");
           // Delete the bucket
           deleteBucket(s3Client, bucketName);
         } else {
@@ -163,10 +165,11 @@ public class S3ServiceImpl implements S3Service {
    *
    * @param s3Url the S3 URL
    * @param accessToken the user's accessToken
-   * @return the S3Client object
+   * @return the s3Result map containing the s3Client, the accessKeyId, and secretKey
    * @throws S3ServiceException when fails to create an S3Client object
    */
-  private S3Client setupS3Client(String s3Url, String accessToken) throws S3ServiceException {
+  private Map<String, Object> setupS3Client(String s3Url, String accessToken)
+      throws S3ServiceException {
     S3Client s3Client = null;
     String accessKeyId = null;
     String secretKey = null;
@@ -198,7 +201,11 @@ public class S3ServiceImpl implements S3Service {
       LOG.error(errorMessage);
       throw new S3ServiceException(errorMessage, e);
     }
-    return s3Client;
+    Map<String, Object> s3Result = new HashMap<>();
+    s3Result.put("s3Client", s3Client);
+    s3Result.put("accessKeyId", accessKeyId);
+    s3Result.put("secretKey", secretKey);
+    return s3Result;
   }
 
   /**
@@ -206,14 +213,16 @@ public class S3ServiceImpl implements S3Service {
    *
    * @param bucketName the name of the bucket to create
    * @param accessToken the user's accessToken
+   * @return the s3Result map containing the s3Client, the accessKeyId, and secretKey
    * @throws S3ServiceException when fails to create a bucket
    */
-  public S3Client manageBucketCreation(String bucketName, String s3Url, String accessToken)
-      throws S3ServiceException {
+  public Map<String, Object> manageBucketCreation(String bucketName, String s3Url,
+      String accessToken) throws S3ServiceException {
     // Try to create an S3Client
-    S3Client s3Client = setupS3Client(s3Url, accessToken);
+    Map<String, Object> s3Result = setupS3Client(s3Url, accessToken);
+    S3Client s3Client = (S3Client) s3Result.get("s3Client");
     // Try to create a bucket
     createBucket(s3Client, bucketName);
-    return s3Client;
+    return s3Result;
   }
 }

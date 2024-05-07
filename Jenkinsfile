@@ -48,7 +48,7 @@ pipeline {
                         script {
                             // Retrieve the Docker image object from the previous stage
                             def dockerhubImage = docker.image("${DOCKER_HUB_IMAGE_NAME}:${env.BRANCH_NAME}")
-                            
+
                             // Login to Docker Hub
                             docker.withRegistry('https://index.docker.io/v1/', DOCKER_HUB_CREDENTIALS) {
                                 // Push the Docker image to Docker Hub
@@ -57,13 +57,13 @@ pipeline {
                         }
                     }
                 }
-                
+
                 stage('Push to Harbor') {
                     steps {
                         script {
                             // Retrieve the Docker image object from the previous stage
                             def harborImage = docker.image("${HARBOR_IMAGE_NAME}:${env.BRANCH_NAME}")
-                            
+
                             // Login to Harbor
                             docker.withRegistry('https://harbor.cloud.infn.it', HARBOR_CREDENTIALS) {
                                 // Push the Docker image to Harbor

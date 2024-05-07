@@ -454,7 +454,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           } else {
             bucketName = uuid + "-" + bucketName;
           }
-          if (!s3Service.checkBucketName(bucketName)) {
+          if (Boolean.FALSE.equals(s3Service.checkBucketName(bucketName))) {
             String errorMessage = String.format(
                 "The bucket name %s does not satisfies the AWS bucket naming rules", bucketName);
             LOG.error(errorMessage);

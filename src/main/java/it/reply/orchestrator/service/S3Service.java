@@ -25,12 +25,14 @@ import software.amazon.awssdk.services.s3.S3Client;
 
 public interface S3Service {
 
+  public void enableBucketVersioning(S3Client s3Client, String bucketName)
+      throws S3ServiceException;
+
   public void deleteAllBuckets(Map<Boolean, Set<Resource>> resources, String accessToken,
       Boolean force) throws S3ServiceException;
 
   public Map<String, Object> manageBucketCreation(String bucketName, String s3Url,
       String accessToken) throws S3ServiceException;
 
-  public void enableBucketVersioning(S3Client s3Client, String bucketName)
-      throws S3ServiceException;
+  public Boolean checkBucketName(String bucketName);
 }

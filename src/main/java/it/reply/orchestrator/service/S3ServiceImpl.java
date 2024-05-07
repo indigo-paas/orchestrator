@@ -24,6 +24,8 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -224,5 +226,18 @@ public class S3ServiceImpl implements S3Service {
     // Try to create a bucket
     createBucket(s3Client, bucketName);
     return s3Result;
+  }
+
+  /**
+   * Check if the bucket name satisfies the AWS bucket naming rules.
+   *
+   * @param bucketName the name of the bucket to create
+   * @return true if the rules are satisfied
+   */
+  public Boolean checkBucketName(String bucketName) {
+    String regex = "^(?!.*\\.\\.)[a-z0-9.-]{1,62}[a-z0-9](?<!-s3alias)(?<!--ol-s3)$";
+    Pattern pattern = Pattern.compile(regex);
+    Matcher matcher = pattern.matcher(bucketName);
+    return matcher.matches();
   }
 }

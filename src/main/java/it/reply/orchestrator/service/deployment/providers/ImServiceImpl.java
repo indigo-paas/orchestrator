@@ -283,7 +283,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
     Map<String, Map<String, String>> iamTemplateOutput = new HashMap<>();
 
     // Define a map of properties of the TOSCA template related to the
-    // S3_TOSCA_NODE_TYPE nodes as input of the orchestrator
+    // S3_TOSCA_NODE_TYPE nodes as input and output of the orchestrator
     Map<String, Map<String, String>> s3TemplateInput = null;
     Map<String, Map<String, String>> s3TemplateOutput = new HashMap<>();
 
@@ -431,15 +431,6 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
         }
 
         try {
-          bucketName = s3TemplateInput.get(nodeName).get(toscaService.getBucketNameProperty());
-          if (bucketName == null || bucketName.isEmpty()) {
-            String errorMessage = "Bucket name not provided or empty";
-            LOG.error(errorMessage);
-            throw new IllegalArgumentException(errorMessage);
-          } else {
-            bucketName = uuid + "-" + bucketName;
-          }
-
           s3Url = s3TemplateInput.get(nodeName).get(toscaService.getS3UrlProperty());
           if (s3Url == null || s3Url.isEmpty()) {
             String errorMessage = "S3 URL not provided or empty";
@@ -451,6 +442,21 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
               s3TemplateInput.get(nodeName).get(toscaService.getEnableVersioningProperty());
           if (enableVersioning == null || enableVersioning.isEmpty()) {
             String errorMessage = "Enable versioning property not provided or empty";
+            LOG.error(errorMessage);
+            throw new IllegalArgumentException(errorMessage);
+          }
+
+          bucketName = s3TemplateInput.get(nodeName).get(toscaService.getBucketNameProperty());
+          if (bucketName == null || bucketName.isEmpty()) {
+            String errorMessage = "Bucket name not provided or empty";
+            LOG.error(errorMessage);
+            throw new IllegalArgumentException(errorMessage);
+          } else {
+            bucketName = uuid + "-" + bucketName;
+          }
+          if (!s3Service.checkBucketName(bucketName)) {
+            String errorMessage = String.format(
+                "The bucket name %s does not satisfies the AWS bucket naming rules", bucketName);
             LOG.error(errorMessage);
             throw new IllegalArgumentException(errorMessage);
           }

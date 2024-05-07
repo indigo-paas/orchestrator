@@ -1271,6 +1271,8 @@ public class ToscaServiceImpl implements ToscaService {
     return ar;
   }
 
+  // TO DO: in the feature the aws_secret_key and aws_access_key should not be written
+  // in the TOSCA template
   @Override
   public ArchiveRoot setDeploymentS3Buckets(ArchiveRoot ar,
       Map<String, Map<String, String>> s3TemplateOutput) {

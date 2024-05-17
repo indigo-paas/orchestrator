@@ -76,9 +76,11 @@ public class CredentialProviderServiceImpl implements CredentialProviderService 
    *
    * @param serviceId is CpComputeServiceId of cloud provider
    * @param accessToken with audience
+   * @param userGroup is the user group
    * @return GenericServiceCredential or GenericServiceCredentialWithTenant
    */
-  public Map<String, Object> credentialProvider(String serviceId, String accessToken) {
+  public Map<String, Object> credentialProvider(String serviceId, String userGroup,
+      String accessToken) {
 
     String sub = null;
 
@@ -101,7 +103,7 @@ public class CredentialProviderServiceImpl implements CredentialProviderService 
         vaultService.retrieveToken(vaultServiceUri.get(), accessToken);
 
     String pathVaultComplete = vaultServiceUri.get() + "/v1/secrets/data/" + sub
-        + vaultService.getServicePath() + serviceId;
+        + vaultService.getServicePath() + serviceId + "/" + userGroup;
 
     return vaultService.readSecret(vaultToken, pathVaultComplete);
   }

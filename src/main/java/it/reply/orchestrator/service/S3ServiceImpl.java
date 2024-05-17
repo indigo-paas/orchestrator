@@ -137,8 +137,8 @@ public class S3ServiceImpl implements S3Service {
    * @param accessToken the identity provider
    * @throws S3ServiceException when fails to delete a bucket
    */
-  public void deleteAllBuckets(Map<Boolean, Set<Resource>> resources, String accessToken,
-      Boolean force) throws S3ServiceException {
+  public void deleteAllBuckets(Map<Boolean, Set<Resource>> resources, String userGroup,
+      String accessToken, Boolean force) throws S3ServiceException {
     if (Boolean.TRUE.equals(force)) {
       LOG.info("Skipping deletion of S3 buckets");
       return;
@@ -150,7 +150,7 @@ public class S3ServiceImpl implements S3Service {
             && resourceMetadata.containsKey(S3_URL_PROPERTY)) {
           String bucketName = resourceMetadata.get(BUCKET_NAME_PROPERTY);
           String s3Url = resourceMetadata.get(S3_URL_PROPERTY);
-          Map<String, Object> result = setupS3Client(s3Url, accessToken);
+          Map<String, Object> result = setupS3Client(s3Url, userGroup, accessToken);
           S3Client s3Client = (S3Client) result.get("s3Client");
           // Delete the bucket
           deleteBucket(s3Client, bucketName);
@@ -170,7 +170,7 @@ public class S3ServiceImpl implements S3Service {
    * @return the s3Result map containing the s3Client, the accessKeyId, and secretKey
    * @throws S3ServiceException when fails to create an S3Client object
    */
-  private Map<String, Object> setupS3Client(String s3Url, String accessToken)
+  private Map<String, Object> setupS3Client(String s3Url, String userGroup, String accessToken)
       throws S3ServiceException {
     S3Client s3Client = null;
     String accessKeyId = null;
@@ -179,7 +179,7 @@ public class S3ServiceImpl implements S3Service {
     // Read credentials from Vault
     try {
       Map<String, Object> vaultOutput =
-          credProvServ.credentialProvider(s3Url.split("//")[1], accessToken);
+          credProvServ.credentialProvider(s3Url.split("//")[1], userGroup, accessToken);
       Map<String, String> s3Credentials = (Map<String, String>) vaultOutput.get("data");
       accessKeyId = s3Credentials.get(AWS_ACCESS_KEY);
       secretKey = s3Credentials.get(AWS_SECRET_KEY);
@@ -218,10 +218,10 @@ public class S3ServiceImpl implements S3Service {
    * @return the s3Result map containing the s3Client, the accessKeyId, and secretKey
    * @throws S3ServiceException when fails to create a bucket
    */
-  public Map<String, Object> manageBucketCreation(String bucketName, String s3Url,
+  public Map<String, Object> manageBucketCreation(String bucketName, String s3Url, String userGroup,
       String accessToken) throws S3ServiceException {
     // Try to create an S3Client
-    Map<String, Object> s3Result = setupS3Client(s3Url, accessToken);
+    Map<String, Object> s3Result = setupS3Client(s3Url, userGroup, accessToken);
     S3Client s3Client = (S3Client) s3Result.get("s3Client");
     // Try to create a bucket
     createBucket(s3Client, bucketName);

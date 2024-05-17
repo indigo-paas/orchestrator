@@ -21,7 +21,9 @@ import it.reply.orchestrator.dal.entity.Resource;
 import it.reply.orchestrator.exception.service.S3ServiceException;
 import it.reply.orchestrator.service.deployment.providers.CredentialProviderService;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -35,10 +37,21 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.BucketVersioningStatus;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.Delete;
 import software.amazon.awssdk.services.s3.model.DeleteBucketRequest;
+import software.amazon.awssdk.services.s3.model.DeleteMarkerEntry;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
 import software.amazon.awssdk.services.s3.model.GetBucketVersioningResponse;
+import software.amazon.awssdk.services.s3.model.ListObjectVersionsRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectVersionsResponse;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
+import software.amazon.awssdk.services.s3.model.ObjectVersion;
 import software.amazon.awssdk.services.s3.model.PutBucketVersioningRequest;
+import software.amazon.awssdk.services.s3.model.S3Object;
+import software.amazon.awssdk.services.s3.paginators.ListObjectVersionsIterable;
 
 @Service
 @Slf4j
@@ -116,6 +129,52 @@ public class S3ServiceImpl implements S3Service {
   public static void deleteBucket(S3Client s3Client, String bucketName) throws S3ServiceException {
     LOG.info("Deleting bucket with name {}", bucketName);
     try {
+
+      ListObjectsV2Request listObjectsV2Request =
+          ListObjectsV2Request.builder().bucket(bucketName).build();
+      ListObjectsV2Response listObjectsV2Response = s3Client.listObjectsV2(listObjectsV2Request);
+      List<S3Object> listObjects = listObjectsV2Response.contents();
+
+      if (!listObjects.isEmpty()) {
+        List<ObjectIdentifier> objectsToDelete = new ArrayList<>();
+        for (S3Object s3Object : listObjects) {
+          objectsToDelete.add(ObjectIdentifier.builder().key(s3Object.key()).build());
+        }
+
+        DeleteObjectsRequest deleteObjectsRequest = DeleteObjectsRequest.builder()
+            .bucket(bucketName).delete(Delete.builder().objects(objectsToDelete).build()).build();
+
+        s3Client.deleteObjects(deleteObjectsRequest);
+        LOG.info("Objects deleted from bucket {}", bucketName);
+      }
+
+      ListObjectVersionsRequest listObjectVersionsRequest =
+          ListObjectVersionsRequest.builder().bucket(bucketName).build();
+      ListObjectVersionsIterable listObjectVersionsIterable =
+          s3Client.listObjectVersionsPaginator(listObjectVersionsRequest);
+
+      for (ListObjectVersionsResponse listObjectVersionsResponse : listObjectVersionsIterable) {
+        List<ObjectIdentifier> versionsToDelete = new ArrayList<>();
+        for (ObjectVersion objectVersion : listObjectVersionsResponse.versions()) {
+          versionsToDelete.add(ObjectIdentifier.builder().key(objectVersion.key())
+              .versionId(objectVersion.versionId()).build());
+        }
+
+        for (DeleteMarkerEntry deleteMarkerEntry : listObjectVersionsResponse.deleteMarkers()) {
+          versionsToDelete.add(ObjectIdentifier.builder().key(deleteMarkerEntry.key())
+              .versionId(deleteMarkerEntry.versionId()).build());
+        }
+
+        if (!versionsToDelete.isEmpty()) {
+          DeleteObjectsRequest deleteObjectsRequest =
+              DeleteObjectsRequest.builder().bucket(bucketName)
+                  .delete(Delete.builder().objects(versionsToDelete).build()).build();
+
+          s3Client.deleteObjects(deleteObjectsRequest);
+          LOG.info("Object versions and delete markers deleted from bucket {}", bucketName);
+        }
+      }
+
       DeleteBucketRequest deleteBucketRequest =
           DeleteBucketRequest.builder().bucket(bucketName).build();
       s3Client.deleteBucket(deleteBucketRequest);

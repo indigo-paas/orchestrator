@@ -44,6 +44,18 @@ import org.jgrapht.graph.DirectedMultigraph;
 
 public interface ToscaService {
 
+  public String getS3ToscaNodeType();
+
+  public String getBucketNameProperty();
+
+  public String getS3UrlProperty();
+
+  public String getEnableVersioningProperty();
+
+  public String getAwsAccessKey();
+
+  public String getAwsSecretKey();
+
   /**
    * Obtain the string TOSCA template representation from the in-memory representation.
    *
@@ -274,10 +286,15 @@ public interface ToscaService {
   boolean isScalable(NodeTemplate nodeTemplate);
 
   public ArchiveRoot setDeploymentTags(ArchiveRoot ar, String orchestratorUrl,
-      String deplymentId, String userEmail);
+      String deplymentId, String userEmail, String preferredUsername);
+
+  public Map<String, Map<String, String>> getS3Properties(ArchiveRoot ar);
 
   public ArchiveRoot setDeploymentClientIam(ArchiveRoot ar,
       Map<String,Map<String,String>> iamTemplateOutput);
+
+  public ArchiveRoot setDeploymentS3Buckets(ArchiveRoot ar,
+      Map<String, Map<String, String>> s3TemplateOutput);
 
   public Map<String,Map<String,String>> getIamProperties(ArchiveRoot ar);
 

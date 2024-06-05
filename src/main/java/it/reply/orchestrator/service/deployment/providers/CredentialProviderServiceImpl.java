@@ -20,13 +20,14 @@ package it.reply.orchestrator.service.deployment.providers;
 import it.reply.orchestrator.dto.security.ServiceCredential;
 import it.reply.orchestrator.dto.vault.TokenAuthenticationExtended;
 import it.reply.orchestrator.exception.service.DeploymentException;
+import it.reply.orchestrator.service.IamServiceException;
 import it.reply.orchestrator.service.VaultService;
-
+import it.reply.orchestrator.utils.JwtUtils;
 import java.net.URI;
+import java.text.ParseException;
+import java.util.Map;
 import java.util.Optional;
-
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -68,6 +69,43 @@ public class CredentialProviderServiceImpl implements CredentialProviderService 
         + serviceId;
 
     return vaultService.readSecret(vaultToken, pathVaultComplete, clazz);
+  }
+
+  /**
+   * Get credentials stored in vault service.
+   *
+   * @param serviceId is CpComputeServiceId of cloud provider
+   * @param accessToken with audience
+   * @param userGroup is the user group
+   * @return GenericServiceCredential or GenericServiceCredentialWithTenant
+   */
+  public Map<String, Object> credentialProvider(String serviceId, String userGroup,
+      String accessToken) {
+
+    String sub = null;
+
+    try {
+      sub = JwtUtils.getJwtClaimsSet(JwtUtils.parseJwt(accessToken)).getStringClaim("sub");
+    } catch (ParseException e) {
+      String errorMessage = String.format("Sub not found in user's token. %s", e.getMessage());
+      LOG.error(errorMessage);
+      throw new IamServiceException(errorMessage, e);
+    }
+
+    if (serviceId == null || serviceId.isEmpty()) {
+      LOG.error("ServiceId is empty.");
+    }
+    Optional<URI> vaultServiceUri = vaultService.getServiceUri();
+    if (!vaultServiceUri.isPresent()) {
+      throw new DeploymentException("Vault service is not configured. Service uri is not present.");
+    }
+    TokenAuthenticationExtended vaultToken =
+        vaultService.retrieveToken(vaultServiceUri.get(), accessToken);
+
+    String pathVaultComplete = vaultServiceUri.get() + "/v1/secrets/data/" + sub
+        + vaultService.getServicePath() + serviceId + "/" + userGroup;
+
+    return vaultService.readSecret(vaultToken, pathVaultComplete);
   }
 
 }

@@ -54,12 +54,14 @@ import it.reply.orchestrator.enums.Task;
 import it.reply.orchestrator.exception.http.BadRequestException;
 import it.reply.orchestrator.exception.service.BusinessWorkflowException;
 import it.reply.orchestrator.exception.service.DeploymentException;
+import it.reply.orchestrator.exception.service.S3ServiceException;
 import it.reply.orchestrator.function.ThrowingConsumer;
 import it.reply.orchestrator.function.ThrowingFunction;
 import it.reply.orchestrator.service.IamService;
 import it.reply.orchestrator.service.IamServiceException;
 import it.reply.orchestrator.service.IndigoInputsPreProcessorService;
 import it.reply.orchestrator.service.IndigoInputsPreProcessorService.RuntimeProperties;
+import it.reply.orchestrator.service.S3Service;
 import it.reply.orchestrator.service.ToscaService;
 import it.reply.orchestrator.service.deployment.providers.factory.ImClientFactory;
 import it.reply.orchestrator.service.security.CustomOAuth2TemplateFactory;
@@ -95,6 +97,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import software.amazon.awssdk.services.s3.S3Client;
 
 @Service
 @DeploymentProviderQualifier(DeploymentProvider.IM)
@@ -110,6 +113,9 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
 
   @Autowired
   private IamService iamService;
+
+  @Autowired
+  private S3Service s3Service;
 
   @Autowired
   private CustomOAuth2TemplateFactory templateFactory;
@@ -143,6 +149,13 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
   public static final String ISSUER = "issuer";
   public static final String OWNER = "owner";
   private static final String CLIENT_ID = "client_id";
+
+  private void deleteExternalResources(RestTemplate restTemplate,
+      Map<Boolean, Set<Resource>> resources, String userGroup, Boolean isForce, String accessToken)
+      throws S3ServiceException {
+    iamService.deleteAllClients(restTemplate, resources, isForce);
+    s3Service.deleteAllBuckets(resources, userGroup, accessToken, isForce);
+  }
 
   protected <R> R executeWithClientForResult(List<CloudProviderEndpoint> cloudProviderEndpoints,
       @Nullable OidcTokenId requestedWithToken,
@@ -204,6 +217,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
     String email = null;
     String issuerUser = null;
     String sub = null;
+    String preferredUsername = null;
     if (accessToken != null) {
       try {
         email = JwtUtils.getJwtClaimsSet(JwtUtils.parseJwt(accessToken)).getStringClaim("email");
@@ -224,6 +238,13 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
         String errorMessage = String.format("Sub not found in user's token. %s", e.getMessage());
         LOG.error(errorMessage);
         throw new IamServiceException(errorMessage, e);
+      }
+      try {
+        preferredUsername = JwtUtils.getJwtClaimsSet(JwtUtils.parseJwt(accessToken))
+            .getStringClaim("preferred_username");
+      } catch (ParseException e) {
+        LOG.debug(e.getMessage());
+        preferredUsername = null;
       }
     }
 
@@ -248,7 +269,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
 
     // add tags
     toscaService.setDeploymentTags(ar, orchestratorProperties.getUrl().toString(),
-        deployment.getId(), email);
+        deployment.getId(), email, preferredUsername);
 
     // Get resources linked to the deployment
     Map<Boolean, Set<Resource>> resources =
@@ -256,11 +277,15 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
             .partitioningBy(resource -> resource.getIaasId() != null, Collectors.toSet()));
 
     // Define a map of properties of the TOSCA template related to the
-    // IAM_TOSCA_NODE_TYPE
-    // nodes as input of the orchestrator and a map of those to be submitted to the
-    // IM
+    // IAM_TOSCA_NODE_TYPE nodes as input of the orchestrator and a map
+    // of those to be submitted to the IM
     Map<String, Map<String, String>> iamTemplateInput = null;
     Map<String, Map<String, String>> iamTemplateOutput = new HashMap<>();
+
+    // Define a map of properties of the TOSCA template related to the
+    // S3_TOSCA_NODE_TYPE nodes as input and output of the orchestrator
+    Map<String, Map<String, String>> s3TemplateInput = null;
+    Map<String, Map<String, String>> s3TemplateOutput = new HashMap<>();
 
     // Loop over the deployment resources and create an IAM client for all the
     // IAM_TOSCA_NODE_TYPE nodes requested
@@ -293,7 +318,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           String errorMessage =
               String.format("%s is not an IAM. Only IAM providers are supported", issuerNode);
           LOG.error(errorMessage);
-          iamService.deleteAllClients(restTemplate, resources);
+          iamService.deleteAllClients(restTemplate, resources, deploymentMessage.isForce());
           throw new IamServiceException(errorMessage);
         }
 
@@ -310,7 +335,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
             String errorMessage = String.format("Impossible to set IAM scopes of node %s. %s",
                 nodeName, e.getMessage());
             LOG.error(errorMessage);
-            iamService.deleteAllClients(restTemplate, resources);
+            iamService.deleteAllClients(restTemplate, resources, deploymentMessage.isForce());
             throw new IamServiceException(errorMessage, e);
           }
           scopes = String.join(" ", inputList);
@@ -322,7 +347,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           String errorMessage =
               "Zero scopes allowed provided are not sufficient to create a client";
           LOG.error(errorMessage);
-          iamService.deleteAllClients(restTemplate, resources);
+          iamService.deleteAllClients(restTemplate, resources, deploymentMessage.isForce());
           throw new IamServiceException(errorMessage);
         }
 
@@ -332,7 +357,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           clientCreated = iamService.createClient(restTemplate,
               wellKnownResponse.getRegistrationEndpoint(), uuid, email, scopes);
         } catch (IamServiceException e) {
-          iamService.deleteAllClients(restTemplate, resources);
+          iamService.deleteAllClients(restTemplate, resources, deploymentMessage.isForce());
           throw e;
         }
 
@@ -358,22 +383,21 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
             RegisteredClient orchestratorClient = orchestratorClients.get(issuerNode);
             String orchestratorClientId = orchestratorClient.getClientId();
             String orchestratorClientSecret = orchestratorClient.getClientSecret();
+            String clientOwner = iamTemplateInput.get(nodeName).get(OWNER);
 
             // Request a token with client_credentials with the orchestrator client, when
             // necessary
-            if (iamTemplateInput.get(nodeName).get(OWNER) != null
-                || issuerNode.equals(issuerUser)) {
+            if ((clientOwner != null && !clientOwner.isEmpty()) || issuerNode.equals(issuerUser)) {
               tokenCredentials = iamService.getTokenClientCredentials(restTemplate,
                   orchestratorClientId, orchestratorClientSecret,
                   iamService.getOrchestratorScopes(), wellKnownResponse.getTokenEndpoint());
             }
             // Assign ownership for the client when possible
-            if (iamTemplateInput.get(nodeName).get(OWNER) != null) {
+            if (clientOwner != null && !clientOwner.isEmpty()) {
               iamService.assignOwnership(restTemplate, clientCreated.get(CLIENT_ID), issuerNode,
-                  iamTemplateInput.get(nodeName).get(OWNER), tokenCredentials);
+                  clientOwner, tokenCredentials);
             }
-            if (iamTemplateInput.get(nodeName).get(OWNER) == null
-                && issuerNode.equals(issuerUser)) {
+            if ((clientOwner == null || clientOwner.isEmpty()) && issuerNode.equals(issuerUser)) {
               iamService.assignOwnership(restTemplate, clientCreated.get(CLIENT_ID), issuerNode,
                   sub, tokenCredentials);
             }
@@ -390,10 +414,93 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           }
         }
       }
+
+      // Manage creation of an S3 bucket
+      if (resource.getToscaNodeType().equals(toscaService.getS3ToscaNodeType())) {
+        String nodeName = resource.getToscaNodeName();
+        String userGroup = deployment.getUserGroup();
+        Map<String, Object> s3Result = null;
+        String bucketName = null;
+        String s3Url = null;
+        String enableVersioning = null;
+        Map<String, String> resourceMetadata = new HashMap<>();
+        LOG.info("Found node of type: {}. Node name: {}", toscaService.getS3ToscaNodeType(),
+            nodeName);
+
+        if (s3TemplateInput == null) {
+          s3TemplateInput = toscaService.getS3Properties(ar);
+        }
+
+        try {
+          s3Url = s3TemplateInput.get(nodeName).get(toscaService.getS3UrlProperty());
+          if (s3Url == null || s3Url.isEmpty()) {
+            String errorMessage = "S3 URL not provided or empty";
+            LOG.error(errorMessage);
+            throw new IllegalArgumentException(errorMessage);
+          }
+
+          enableVersioning =
+              s3TemplateInput.get(nodeName).get(toscaService.getEnableVersioningProperty());
+          if (enableVersioning == null || enableVersioning.isEmpty()) {
+            String errorMessage = "Enable versioning property not provided or empty";
+            LOG.error(errorMessage);
+            throw new IllegalArgumentException(errorMessage);
+          }
+
+          bucketName = s3TemplateInput.get(nodeName).get(toscaService.getBucketNameProperty());
+          if (bucketName == null || bucketName.isEmpty()) {
+            String errorMessage = "Bucket name not provided or empty";
+            LOG.error(errorMessage);
+            throw new IllegalArgumentException(errorMessage);
+          } else {
+            bucketName = uuid + "-" + bucketName;
+          }
+          if (Boolean.FALSE.equals(s3Service.checkBucketName(bucketName))) {
+            String errorMessage = String.format(
+                "The bucket name %s does not satisfies the AWS bucket naming rules", bucketName);
+            LOG.error(errorMessage);
+            throw new IllegalArgumentException(errorMessage);
+          }
+
+          // Create an s3Client and the S3 bucket
+          s3Result = s3Service.manageBucketCreation(bucketName, s3Url, userGroup, accessToken);
+
+          // Write info of the bucket in resource metadata
+          resourceMetadata.put(toscaService.getBucketNameProperty(), bucketName);
+          resourceMetadata.put(toscaService.getS3UrlProperty(), s3Url);
+          resource.setMetadata(resourceMetadata);
+          resourceMetadata.put(toscaService.getAwsAccessKey(),
+              (String) s3Result.get("accessKeyId"));
+          resourceMetadata.put(toscaService.getAwsSecretKey(), (String) s3Result.get("secretKey"));
+          s3TemplateOutput.put(nodeName, resourceMetadata);
+
+          // Enable bucket versioning if needed
+          if (enableVersioning.equals("true")) {
+            s3Service.enableBucketVersioning((S3Client) s3Result.get("s3Client"), bucketName);
+          }
+        } catch (Throwable e) {
+          String errorMessage =
+              String.format("Failure in the creation process of an S3 bucket with bucket name %s, "
+                  + "using S3 URL %s. %s", bucketName, s3Url, e.getMessage());
+          LOG.error(errorMessage);
+          try {
+            LOG.info("Deleting all the external resources");
+            deleteExternalResources(restTemplate, resources, userGroup, deploymentMessage.isForce(),
+                accessToken);
+          } catch (S3ServiceException e1) {
+            String errorMessage2 =
+                String.format("Failure in the deletion of external resources. %s", e.getMessage());
+            LOG.error(errorMessage2);
+            throw new RuntimeException(e1.getMessage(), e1);
+          }
+          throw new RuntimeException(e.getMessage(), e);
+        }
+      }
     }
 
     // Update the template with properties of IAM_TOSCA_NODE_TYPE nodes
     toscaService.setDeploymentClientIam(ar, iamTemplateOutput);
+    toscaService.setDeploymentS3Buckets(ar, s3TemplateOutput);
 
     String imCustomizedTemplate = toscaService.serialize(ar);
 
@@ -407,7 +514,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           infrastructureId);
       deployment.setEndpoint(infrastructureId);
     } catch (ImClientException ex) {
-      iamService.deleteAllClients(restTemplate, resources);
+      iamService.deleteAllClients(restTemplate, resources, deploymentMessage.isForce());
       throw handleImClientException(ex);
     }
 
@@ -566,8 +673,8 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           deployment.getCloudProviderEndpoint().getAllCloudProviderEndpoint();
 
       try {
-        executeWithClient(cloudProviderEndpoints, requestedWithToken,
-            client -> client.destroyInfrastructureAsync(deploymentEndpoint));
+        executeWithClient(cloudProviderEndpoints, requestedWithToken, client -> client
+            .destroyInfrastructureAsync(deploymentEndpoint, deploymentMessage.isForce()));
         deployment.setEndpoint(null);
       } catch (ImClientErrorException exception) {
         if (!exception.getResponseError().is404Error()) {
@@ -766,6 +873,11 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
 
     final OidcTokenId requestedWithToken = deploymentMessage.getRequestedWithToken();
 
+    String accessToken = null;
+    if (oidcProperties.isEnabled()) {
+      accessToken = oauth2TokenService.getAccessToken(requestedWithToken);
+    }
+
     String deploymentEndpoint = deployment.getEndpoint();
 
     if (deploymentEndpoint != null) {
@@ -775,8 +887,8 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           deployment.getCloudProviderEndpoint().getAllCloudProviderEndpoint();
 
       try {
-        executeWithClient(cloudProviderEndpoints, requestedWithToken,
-            client -> client.destroyInfrastructureAsync(deploymentEndpoint));
+        executeWithClient(cloudProviderEndpoints, requestedWithToken, client -> client
+            .destroyInfrastructureAsync(deploymentEndpoint, deploymentMessage.isForce()));
 
       } catch (ImClientErrorException exception) {
         if (!exception.getResponseError().is404Error()) {
@@ -788,8 +900,18 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
     }
 
     // Delete all IAM clients if there are resources of type IAM_TOSCA_NODE_TYPE
-    iamService.deleteAllClients(restTemplate, resources);
+    iamService.deleteAllClients(restTemplate, resources, deploymentMessage.isForce());
 
+    // Delete all buckets clients if there are resources of type S3_TOSCA_NODE_TYPE
+    try {
+      String userGroup = deployment.getUserGroup();
+      s3Service.deleteAllBuckets(resources, userGroup, accessToken, deploymentMessage.isForce());
+    } catch (S3ServiceException e) {
+      String errorMessage =
+          String.format("Failure in the deletion of all the created buckets. %s", e.getMessage());
+      LOG.error(errorMessage);
+      throw new RuntimeException(e.getMessage(), e);
+    }
     return true;
   }
 

@@ -117,6 +117,13 @@ public class ToscaServiceImpl implements ToscaService {
   private static final String CLIENT_ID = "client_id";
   private static final String REGISTRATION_ACCESS_TOKEN = "registration_access_token";
 
+  private static final String S3_TOSCA_NODE_TYPE = "tosca.nodes.indigo.S3Bucket";
+  private static final String BUCKET_NAME_PROPERTY = "bucket_name";
+  private static final String S3_URL_PROPERTY = "s3_url";
+  private static final String ENABLE_VERSIONING_PROPERTY = "enable_versioning";
+  private static final String AWS_ACCESS_KEY_PROPERTY = "aws_access_key";
+  private static final String AWS_SECRET_KEY_PROPERTY = "aws_secret_key";
+
   @Autowired
   private IndigoInputsPreProcessorService indigoInputsPreProcessorService;
 
@@ -128,6 +135,30 @@ public class ToscaServiceImpl implements ToscaService {
 
   @Autowired
   private TemplateParser templateParser;
+
+  public String getS3ToscaNodeType() {
+    return S3_TOSCA_NODE_TYPE;
+  }
+
+  public String getBucketNameProperty() {
+    return BUCKET_NAME_PROPERTY;
+  }
+
+  public String getS3UrlProperty() {
+    return S3_URL_PROPERTY;
+  }
+
+  public String getEnableVersioningProperty() {
+    return ENABLE_VERSIONING_PROPERTY;
+  }
+
+  public String getAwsAccessKey() {
+    return AWS_ACCESS_KEY_PROPERTY;
+  }
+
+  public String getAwsSecretKey() {
+    return AWS_SECRET_KEY_PROPERTY;
+  }
 
   @Override
   public void replaceInputFunctions(ArchiveRoot archiveRoot, Map<String, Object> inputs) {
@@ -1190,7 +1221,8 @@ public class ToscaServiceImpl implements ToscaService {
   public ArchiveRoot setDeploymentTags(ArchiveRoot ar,
       String orchestratorUrl,
       String deplymentId,
-      String userEmail) {
+      String userEmail,
+      String preferredUsername) {
 
     getNodesOfType(ar, ToscaConstants.Nodes.Types.COMPUTE).stream()
         .forEach(computeNode -> {
@@ -1210,6 +1242,9 @@ public class ToscaServiceImpl implements ToscaService {
           tagsProperty.getValue().put("PAAS_DEP_UUID", deplymentId);
           if (!StringUtil.isNullOrEmpty(userEmail)) {
             tagsProperty.getValue().put("PAAS_DEP_USER_EMAIL", userEmail);
+          }
+          if (!StringUtil.isNullOrEmpty(preferredUsername)) {
+            tagsProperty.getValue().put("PAAS_DEP_USER", preferredUsername);
           }
         });
     return ar;
@@ -1232,6 +1267,29 @@ public class ToscaServiceImpl implements ToscaService {
           new ScalarPropertyValue(iamTemplateOutput.get(iamNodeName).get(CLIENT_ID)));
       properties.put(REGISTRATION_ACCESS_TOKEN, new ScalarPropertyValue(
           iamTemplateOutput.get(iamNodeName).get(REGISTRATION_ACCESS_TOKEN)));
+    });
+    return ar;
+  }
+
+  // TO DO: in the feature the aws_secret_key and aws_access_key should not be written
+  // in the TOSCA template
+  @Override
+  public ArchiveRoot setDeploymentS3Buckets(ArchiveRoot ar,
+      Map<String, Map<String, String>> s3TemplateOutput) {
+    getNodesOfType(ar, S3_TOSCA_NODE_TYPE).stream().forEach(s3BucketNode -> {
+      Map<String, AbstractPropertyValue> properties =
+          Optional.ofNullable(s3BucketNode.getProperties()).orElseGet(() -> {
+            s3BucketNode.setProperties(new HashMap<>());
+            return s3BucketNode.getProperties();
+          });
+
+      String iamNodeName = s3BucketNode.getName();
+      properties.put(AWS_ACCESS_KEY_PROPERTY,
+          new ScalarPropertyValue(s3TemplateOutput.get(iamNodeName).get(AWS_ACCESS_KEY_PROPERTY)));
+      properties.put(AWS_SECRET_KEY_PROPERTY,
+          new ScalarPropertyValue(s3TemplateOutput.get(iamNodeName).get(AWS_SECRET_KEY_PROPERTY)));
+      properties.put(BUCKET_NAME_PROPERTY,
+          new ScalarPropertyValue(s3TemplateOutput.get(iamNodeName).get(BUCKET_NAME_PROPERTY)));
     });
     return ar;
   }
@@ -1267,6 +1325,45 @@ public class ToscaServiceImpl implements ToscaService {
       innerMap.put(SCOPES, scopes);
       innerMap.put(OWNER, owner);
       String nodeName = iamNode.getName();
+      nodeProperties.put(nodeName, innerMap);
+    });
+    return nodeProperties;
+  }
+
+  @Override
+  public Map<String, Map<String, String>> getS3Properties(ArchiveRoot ar) {
+    Map<String, Map<String, String>> nodeProperties = new HashMap<>();
+    getNodesOfType(ar, S3_TOSCA_NODE_TYPE).stream().forEach(s3Node -> {
+      Map<String, AbstractPropertyValue> properties =
+          Optional.ofNullable(s3Node.getProperties()).orElseGet(() -> {
+            s3Node.setProperties(new HashMap<>());
+            return s3Node.getProperties();
+          });
+
+      String bucketName = null;
+      String s3Url = null;
+      String enableVersioning = null;
+      if (properties.containsKey(BUCKET_NAME_PROPERTY)) {
+        ScalarPropertyValue scalarPropertyValue =
+            (ScalarPropertyValue) properties.get(BUCKET_NAME_PROPERTY);
+        bucketName = scalarPropertyValue.getValue();
+      }
+      if (properties.containsKey(S3_URL_PROPERTY)) {
+        ScalarPropertyValue scalarPropertyValue =
+            (ScalarPropertyValue) properties.get(S3_URL_PROPERTY);
+        s3Url = scalarPropertyValue.getValue();
+      }
+      if (properties.containsKey(ENABLE_VERSIONING_PROPERTY)) {
+        ScalarPropertyValue scalarPropertyValue =
+            (ScalarPropertyValue) properties.get(ENABLE_VERSIONING_PROPERTY);
+        enableVersioning = scalarPropertyValue.getValue();
+      }
+
+      Map<String, String> innerMap = new HashMap<>();
+      innerMap.put(BUCKET_NAME_PROPERTY, bucketName);
+      innerMap.put(S3_URL_PROPERTY, s3Url);
+      innerMap.put(ENABLE_VERSIONING_PROPERTY, enableVersioning);
+      String nodeName = s3Node.getName();
       nodeProperties.put(nodeName, innerMap);
     });
     return nodeProperties;

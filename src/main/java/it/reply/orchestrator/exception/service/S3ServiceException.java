@@ -15,17 +15,15 @@
  * limitations under the License.
  */
 
-package it.reply.orchestrator.service.deployment.providers;
+package it.reply.orchestrator.exception.service;
 
-import it.reply.orchestrator.dto.security.ServiceCredential;
-import java.util.Map;
+public class S3ServiceException extends Exception {
 
-public interface CredentialProviderService {
+  public S3ServiceException(String message) {
+    super(message);
+  }
 
-  public <T extends ServiceCredential> T credentialProvider(String serviceId,
-      String accessToken, Class<T> clazz);
-
-  public Map<String, Object> credentialProvider(String serviceId, String userGroup,
-      String accessToken);
-
+  public S3ServiceException(String message, Throwable e) {
+    super(message, e);
+  }
 }

@@ -29,7 +29,7 @@ The PaaS Orchestrator needs the presence of the following INDIGO services:
 * [How to build](gitbook/how_to_build.md)
 * [How to deploy](gitbook/how_to_deploy.md)
 * [How to upgrade](gitbook/how_to_upgrade.md)
-* [REST APIs & Java Doc](http://indigo-paas.github.io/orchestrator/)
+* [REST APIs & Java Doc](http://infn-datacloud.github.io/orchestrator/)
 * [Service Reference Card](gitbook/service_reference_card.md)
 
 ### Acknowledgments:

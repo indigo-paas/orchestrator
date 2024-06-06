@@ -4,11 +4,11 @@ INDIGO PaaS Orchestrator
 ============================
 
 
-[![GitHub license](https://img.shields.io/github/license/indigo-paas/orchestrator.svg?maxAge=2592000&style=flat-square)](https://github.com/indigo-paas/orchestrator/blob/master/LICENSE)
-[![GitHub release](https://img.shields.io/github/release/indigo-paas/orchestrator.svg?maxAge=3600&style=flat-square)](https://github.com/indigo-paas/orchestrator/releases/latest)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=indigo-paas_orchestrator&metric=coverage)](https://sonarcloud.io/summary/new_code?id=indigo-paas_orchestrator)
-[![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=indigo-paas_orchestrator&metric=sqale_index)](https://sonarcloud.io/summary/new_code?id=indigo-paas_orchestrator)
-[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=indigo-paas_orchestrator&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=indigo-paas_orchestrator)
+[![GitHub license](https://img.shields.io/github/license/infn-datacloud/orchestrator.svg?maxAge=2592000&style=flat-square)](https://github.com/infn-datacloud/orchestrator/blob/master/LICENSE)
+[![GitHub release](https://img.shields.io/github/release/infn-datacloud/orchestrator.svg?maxAge=3600&style=flat-square)](https://github.com/infn-datacloud/orchestrator/releases/latest)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=infn-datacloud_orchestrator&metric=coverage)](https://sonarcloud.io/summary/new_code?id=infn-datacloud_orchestrator)
+[![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=infn-datacloud_orchestrator&metric=sqale_index)](https://sonarcloud.io/summary/new_code?id=infn-datacloud_orchestrator)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=infn-datacloud_orchestrator&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=infn-datacloud_orchestrator)
 
 The INDIGO PaaS Orchestrator is a component of the PaaS layer that allows to instantiate resources on Cloud Management Frameworks (like [OpenStack](https://www.openstack.org/) and [OpenNebula](http://opennebula.org/)), [Mesos](http://mesos.apache.org/) and [Kubernetes](https://kubernetes.io/) clusters.
 

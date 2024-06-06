@@ -41,9 +41,9 @@
   </licenses>
 
   <scm>
-    <url>https://github.com/indigo-paas/orchestrator</url>
-    <connection>scm:git:https://github.com/indigo-paas/orchestrator.git</connection>
-    <developerConnection>scm:git:https://github.com/indigo-paas/orchestrator.git</developerConnection>
+    <url>https://github.com/infn-datacloud/orchestrator</url>
+    <connection>scm:git:https://github.com/infn-datacloud/orchestrator.git</connection>
+    <developerConnection>scm:git:https://github.com/infn-datacloud/orchestrator.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 

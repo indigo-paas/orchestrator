@@ -20,17 +20,13 @@ package it.reply.orchestrator.service.commands;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import it.reply.orchestrator.exception.service.BusinessWorkflowException;
 import it.reply.orchestrator.exception.service.WorkflowException;
 import it.reply.orchestrator.utils.MdcUtils;
 import it.reply.orchestrator.utils.WorkflowConstants.ErrorCode;
 import it.reply.orchestrator.utils.WorkflowUtil;
-
 import java.util.Optional;
-
 import lombok.extern.slf4j.Slf4j;
-
 import org.flowable.bpmn.model.FlowElement;
 import org.flowable.common.engine.api.FlowableException;
 import org.flowable.engine.delegate.DelegateExecution;
@@ -46,6 +42,7 @@ public abstract class BaseJavaDelegate implements JavaDelegate {
   @Override
   public final void execute(DelegateExecution execution) {
     String businessKey = execution.getProcessInstanceBusinessKey();
+    String deploymentId = businessKey.substring(0, businessKey.indexOf(':'));
     MdcUtils.fromBusinessKey(businessKey);
 
     String taskName = Optional
@@ -60,12 +57,15 @@ public abstract class BaseJavaDelegate implements JavaDelegate {
     } catch (BusinessWorkflowException ex) {
       LOG.error("Task {} - ENDED WITH ERROR:\n{}", taskName, getErrorMessagePrefix(), ex);
       WorkflowUtil.persistAndPropagateError(execution, ex);
+      LOG.error("Deployment in error. uuid: {}. Status: CREATE_FAILED. Status_reason: {}", deploymentId, ex.getMessage());
     } catch (FlowableException | WorkflowException ex) {
       LOG.error("Task {} - ENDED WITH ERROR:\n{}", taskName, getErrorMessagePrefix(), ex);
+      LOG.error("Deployment in error. uuid: {}. Status: CREATE_FAILED. Status_reason: {}", deploymentId, ex.getMessage());
       // Re-throw
       throw ex;
     } catch (RuntimeException ex) {
       LOG.error("Task {} - ENDED WITH ERROR:\n{}", taskName, getErrorMessagePrefix(), ex);
+      LOG.error("Deployment in error. uuid: {}. Status: CREATE_FAILED. Status_reason: {}", deploymentId, ex.getMessage());
       throw new WorkflowException(ErrorCode.RUNTIME_ERROR, getErrorMessagePrefix(), ex);
     } finally {
       MdcUtils.clean();

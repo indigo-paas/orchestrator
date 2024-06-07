@@ -17,15 +17,18 @@
 
 package it.reply.orchestrator.service.commands;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import it.reply.orchestrator.service.deployment.providers.DeploymentStatusHelper;
 import it.reply.orchestrator.utils.WorkflowConstants;
-
 import lombok.AllArgsConstructor;
-
+import lombok.extern.slf4j.Slf4j;
 import org.flowable.engine.delegate.DelegateExecution;
 import org.springframework.stereotype.Component;
 
 @Component(WorkflowConstants.Delegate.HANDLE_ERROR)
+@Slf4j
 @AllArgsConstructor
 public class HandleError extends BaseJavaDelegate {
 
@@ -39,6 +42,21 @@ public class HandleError extends BaseJavaDelegate {
         Exception.class);
 
     deploymentStatusHelper.updateOnError(deploymentId, exception.getMessage());
+
+    ObjectMapper objectMapper = new ObjectMapper();
+    ObjectNode logData = objectMapper.createObjectNode();
+    logData.put("uuid", deploymentId);
+    logData.put("status", "CREATE_FAILED");
+    logData.put("status_reason", exception.getMessage());
+
+    // Print information about the submission of the deployment
+    String jsonString = null;
+    try {
+      jsonString = objectMapper.writeValueAsString(logData);
+      LOG.info("Deployment in error. {}", jsonString);
+    } catch (JsonProcessingException e) {
+      LOG.error(e.getMessage());
+    }
   }
 
   @Override

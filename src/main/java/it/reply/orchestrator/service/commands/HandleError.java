@@ -20,12 +20,10 @@ package it.reply.orchestrator.service.commands;
 import it.reply.orchestrator.service.deployment.providers.DeploymentStatusHelper;
 import it.reply.orchestrator.utils.WorkflowConstants;
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.flowable.engine.delegate.DelegateExecution;
 import org.springframework.stereotype.Component;
 
 @Component(WorkflowConstants.Delegate.HANDLE_ERROR)
-@Slf4j
 @AllArgsConstructor
 public class HandleError extends BaseJavaDelegate {
 

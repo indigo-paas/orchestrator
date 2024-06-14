@@ -18,7 +18,6 @@
 package it.reply.orchestrator.service.commands;
 
 import alien4cloud.tosca.model.ArchiveRoot;
-
 import it.reply.orchestrator.dal.entity.Deployment;
 import it.reply.orchestrator.dal.entity.OidcTokenId;
 import it.reply.orchestrator.dto.RankCloudProvidersMessage;
@@ -48,7 +47,6 @@ import it.reply.orchestrator.service.ToscaService;
 import it.reply.orchestrator.utils.CommonUtils;
 import it.reply.orchestrator.utils.ToscaConstants;
 import it.reply.orchestrator.utils.WorkflowConstants;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -58,9 +56,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import lombok.extern.slf4j.Slf4j;
-
 import org.alien4cloud.tosca.model.templates.NodeTemplate;
 import org.alien4cloud.tosca.model.templates.Topology;
 import org.apache.commons.lang3.StringUtils;

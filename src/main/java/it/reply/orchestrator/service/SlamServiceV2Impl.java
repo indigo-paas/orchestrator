@@ -37,7 +37,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 @ServiceVersion("v1")
-public class SlamServiceV1Impl implements SlamService {
+public class SlamServiceV2Impl implements SlamService {
 
   private SlamProperties slamProperties;
 
@@ -55,13 +55,25 @@ public class SlamServiceV1Impl implements SlamService {
    * @param restTemplateBuilder
    *          the RestTemplateBuilder to use
    */
-  public SlamServiceV1Impl(
+  public SlamServiceV2Impl(
       SlamProperties slamProperties, OAuth2TokenService oauth2TokenService,
       RestTemplateBuilder restTemplateBuilder) {
     this.slamProperties = slamProperties;
     this.oauth2TokenService = oauth2TokenService;
     this.restTemplate = restTemplateBuilder.build();
   }
+
+  // private SlamPreferences remapAttributes(UserGroup userGroup) {
+  //   SlamPreferences slamPreferences;
+
+  //   userGroup.getSlas.forEach(sla -> {
+  //     Preference preference;
+  //     preference.setCustomer(userGroup.getId());
+  //     preference.setId(null);
+  //     slamPreferences.setPreferences(null);
+
+  //   });
+  // }
 
   @Override
   public SlamPreferences getCustomerPreferences(OidcTokenId tokenId, @Nullable String userGroup) {

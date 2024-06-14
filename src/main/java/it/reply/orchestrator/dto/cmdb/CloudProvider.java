@@ -19,19 +19,15 @@ package it.reply.orchestrator.dto.cmdb;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import javax.validation.constraints.NotNull;
-
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 @Data

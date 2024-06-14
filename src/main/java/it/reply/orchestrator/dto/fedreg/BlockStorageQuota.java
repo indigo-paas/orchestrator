@@ -15,14 +15,28 @@
  * limitations under the License.
  */
 
-package it.reply.orchestrator.service;
+package it.reply.orchestrator.dto.fedreg;
 
-import it.reply.orchestrator.dal.entity.OidcTokenId;
-import it.reply.orchestrator.dto.slam.SlamPreferences;
-import javax.annotation.Nullable;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
-public interface SlamService {
+@Data
+@EqualsAndHashCode(callSuper = true)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
+public class BlockStorageQuota extends Quota {
 
-  public SlamPreferences getCustomerPreferences(OidcTokenId tokenId, @Nullable String userGroup);
+  @JsonProperty("gigabytes")
+  private Integer gigabytes;
+
+  @JsonProperty("per_volume_gigabytes")
+  private Integer perVolumeGigabytes;
+
+  @JsonProperty("volumes")
+  private Integer volumes;
 
 }

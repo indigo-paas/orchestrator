@@ -15,14 +15,28 @@
  * limitations under the License.
  */
 
-package it.reply.orchestrator.service;
+package it.reply.orchestrator.dto.fedreg;
 
-import it.reply.orchestrator.dal.entity.OidcTokenId;
-import it.reply.orchestrator.dto.slam.SlamPreferences;
-import javax.annotation.Nullable;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
-public interface SlamService {
+@Data
+@EqualsAndHashCode(callSuper = true)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
+public class ComputeQuota extends Quota {
 
-  public SlamPreferences getCustomerPreferences(OidcTokenId tokenId, @Nullable String userGroup);
+  @JsonProperty("cores")
+  private Integer cores;
+
+  @JsonProperty("instances")
+  private Integer instances;
+
+  @JsonProperty("ram")
+  private Integer ram;
 
 }

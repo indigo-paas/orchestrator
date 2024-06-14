@@ -9,6 +9,37 @@
   "workspaceFolder": "/workspace",
   "shutdownAction": "stopCompose",
 
+  // Configure tool-specific properties.
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-azuretools.vscode-docker",
+        "esbenp.prettier-vscode",
+        "streetsidesoftware.code-spell-checker",
+        "SonarSource.sonarlint-vscode",
+        "eamodio.gitlens",
+        "redhat.vscode-xml"
+      ],
+      "settings": {
+        "java.compile.nullAnalysis.mode": "automatic",
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "[xml]": {
+          "editor.defaultFormatter": "redhat.vscode-xml"
+        },
+        "[dockercompose]": {
+          "editor.defaultFormatter": "ms-azuretools.vscode-docker"
+        },
+        "[dockerfile]": {
+          "editor.defaultFormatter": "ms-azuretools.vscode-docker"
+        },
+        "sonarlint.connectedMode.project": {
+          "connectionId": "indigo-paas/orchestrator",
+          "projectKey": "indigo-paas_orchestrator"
+        }
+      }
+    }    
+  },
+
   "features": {
     "ghcr.io/devcontainers/features/java:1": {
       "version": "8",
@@ -21,43 +52,13 @@
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
+
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   // "forwardPorts": [],
+  
   // Use 'postCreateCommand' to run commands after the container is created.
-  "postCreateCommand": "bash .devcontainer/postCreateCommand.sh",
-  // Configure tool-specific properties.
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        "ms-azuretools.vscode-docker",
-        "esbenp.prettier-vscode",
-        "streetsidesoftware.code-spell-checker",
-        "SonarSource.sonarlint-vscode",
-        "eamodio.gitlens",
-        "redhat.vscode-xml"
-      ]
-    },
-    "settings": {
-      "java.compile.nullAnalysis.mode": "automatic",
-      "editor.defaultFormatter": "esbenp.prettier-vscode",
-      "[xml]": {
-        "editor.defaultFormatter": "redhat.vscode-xml"
-      },
-      "[sql]": {
-        "editor.defaultFormatter": "adpyke.vscode-sql-formatter"
-      },
-      "[dockercompose]": {
-        "editor.defaultFormatter": "ms-azuretools.vscode-docker"
-      },
-      "[dockerfile]": {
-        "editor.defaultFormatter": "ms-azuretools.vscode-docker"
-      },
-      "sonarlint.connectedMode.project": {
-        "connectionId": "indigo-paas/orchestrator",
-        "projectKey": "indigo-paas_orchestrator"
-      }
-    }
-  }
+  "postCreateCommand": "bash .devcontainer/postCreateCommand.sh"
+
   // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
   // "remoteUser": "root"
 }

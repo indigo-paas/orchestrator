@@ -31,7 +31,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
-public class Project {
+public class Image {
 
   @JsonProperty("description")
   private String description;
@@ -44,32 +44,36 @@ public class Project {
   @NotNull
   private String uuid;
 
+  @JsonProperty("os_type")
+  private String osType;
+
+  @JsonProperty("os_distro")
+  private String osDistro;
+
+  @JsonProperty("os_version")
+  private String osVersion;
+
+  @JsonProperty("architecture")
+  private String architecture;
+
+  @JsonProperty("kernel_id")
+  private String kernelId;
+
+  @JsonProperty("cuda_support")
+  private String cudaSupport;
+
+  @JsonProperty("gpu_driver")
+  private String gpuDriver;
+
+  @JsonProperty("is_public")
+  private Boolean isPublic;
+
+  @JsonProperty("tags")
+  @Builder.Default
+  private List<String> tags = new ArrayList<>();
+
   @JsonProperty("uid")
   @NotNull
   private String uid;
-
-  @JsonProperty("provider")
-  @NotNull
-  private Provider provider;
-
-  @JsonProperty("quotas")
-  @Builder.Default
-  @NotNull
-  private List<Quota> quotas = new ArrayList<>();
-
-  @JsonProperty("sla")
-  private Sla sla;
-
-  @JsonProperty("flavors")
-  @Builder.Default
-  private List<Flavor> flavors = new ArrayList<>();
-
-  @JsonProperty("images")
-  @Builder.Default
-  private List<Image> images = new ArrayList<>();
-
-  @JsonProperty("networks")
-  @Builder.Default
-  private List<Network> networks = new ArrayList<>();
 
 }

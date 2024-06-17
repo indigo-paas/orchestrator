@@ -19,37 +19,18 @@ package it.reply.orchestrator.dto.fedreg;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.validation.constraints.NotNull;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@Builder
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor(access = AccessLevel.PROTECTED)
-public class Service {
-
-  @JsonProperty("description")
-  private String description;
-
-  @JsonProperty("endpoint")
-  @NotNull
-  private String endpoint;
-
-  @JsonProperty("type")
-  private String type;
-
-  @JsonProperty("name")
-  @NotNull
-  private String name;
+public class Region {
 
   @JsonProperty("uid")
   @NotNull
   private String uid;
 
-  @JsonProperty("region")
-  private Region region;
+  @JsonProperty("description")
+  private String description;
+
+  @JsonProperty("name")
+  @NotNull
+  private String name;
 
 }

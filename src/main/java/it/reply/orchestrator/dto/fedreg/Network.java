@@ -31,7 +31,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
-public class Project {
+public class Network {
 
   @JsonProperty("description")
   private String description;
@@ -44,32 +44,30 @@ public class Project {
   @NotNull
   private String uuid;
 
+  @JsonProperty("is_shared")
+  private Boolean isShared;
+
+  @JsonProperty("is_router_external")
+  private Boolean isRouterExternal;
+
+  @JsonProperty("is_default")
+  private Boolean isDefault;
+
+  @JsonProperty("mtu")
+  private Integer mtu;
+
+  @JsonProperty("proxy_host")
+  private String proxyHost;
+
+  @JsonProperty("proxy_user")
+  private String proxyUser;
+
+  @JsonProperty("tags")
+  @Builder.Default
+  private List<String> tags = new ArrayList<>();
+
   @JsonProperty("uid")
   @NotNull
   private String uid;
-
-  @JsonProperty("provider")
-  @NotNull
-  private Provider provider;
-
-  @JsonProperty("quotas")
-  @Builder.Default
-  @NotNull
-  private List<Quota> quotas = new ArrayList<>();
-
-  @JsonProperty("sla")
-  private Sla sla;
-
-  @JsonProperty("flavors")
-  @Builder.Default
-  private List<Flavor> flavors = new ArrayList<>();
-
-  @JsonProperty("images")
-  @Builder.Default
-  private List<Image> images = new ArrayList<>();
-
-  @JsonProperty("networks")
-  @Builder.Default
-  private List<Network> networks = new ArrayList<>();
 
 }

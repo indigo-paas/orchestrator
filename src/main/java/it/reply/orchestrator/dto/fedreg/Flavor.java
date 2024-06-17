@@ -18,8 +18,6 @@
 package it.reply.orchestrator.dto.fedreg;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.ArrayList;
-import java.util.List;
 import javax.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -31,7 +29,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
-public class Project {
+public class Flavor {
 
   @JsonProperty("description")
   private String description;
@@ -44,32 +42,41 @@ public class Project {
   @NotNull
   private String uuid;
 
+  @JsonProperty("disk")
+  private Integer disk;
+
+  @JsonProperty("is_public")
+  private Boolean isPublic;
+
+  @JsonProperty("ram")
+  private Integer ram;
+
+  @JsonProperty("vcpus")
+  private Integer vcpus;
+
+  @JsonProperty("swap")
+  private Integer swap;
+
+  @JsonProperty("ephemeral")
+  private Integer ephemeral;
+
+  @JsonProperty("infiniband")
+  private Boolean infiniband;
+
+  @JsonProperty("gpus")
+  private Integer gpus;
+
+  @JsonProperty("gpu_model")
+  private String gpuModel;
+
+  @JsonProperty("gpu_vendor")
+  private String gpuVendor;
+
+  @JsonProperty("local_storage")
+  private String localStorage;
+
   @JsonProperty("uid")
   @NotNull
   private String uid;
-
-  @JsonProperty("provider")
-  @NotNull
-  private Provider provider;
-
-  @JsonProperty("quotas")
-  @Builder.Default
-  @NotNull
-  private List<Quota> quotas = new ArrayList<>();
-
-  @JsonProperty("sla")
-  private Sla sla;
-
-  @JsonProperty("flavors")
-  @Builder.Default
-  private List<Flavor> flavors = new ArrayList<>();
-
-  @JsonProperty("images")
-  @Builder.Default
-  private List<Image> images = new ArrayList<>();
-
-  @JsonProperty("networks")
-  @Builder.Default
-  private List<Network> networks = new ArrayList<>();
 
 }

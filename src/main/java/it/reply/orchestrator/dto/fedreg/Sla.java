@@ -55,6 +55,9 @@ public class Sla {
 
   @JsonProperty("projects")
   @Builder.Default
-  @NotNull
   private List<Project> projects = new ArrayList<>();
+
+  @JsonProperty("user_group")
+  private UserGroup userGroup;
+
 }

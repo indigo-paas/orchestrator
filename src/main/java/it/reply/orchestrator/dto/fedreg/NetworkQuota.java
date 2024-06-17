@@ -42,6 +42,6 @@ public class NetworkQuota extends Quota {
   @JsonProperty("security_groups")
   private Integer securityGroups;
 
-  @JsonProperty("security_groups_rules")
+  @JsonProperty("security_group_rules")
   private Integer securityGroupsRules;
 }

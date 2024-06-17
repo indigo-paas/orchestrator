@@ -35,7 +35,7 @@ public class UserGroup { // implements CmdbIdentifiable
 
   @JsonProperty("uid")
   @NotNull
-  private String id;
+  private String uid;
 
   @JsonProperty("description")
   private String description;

@@ -36,7 +36,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
-@ServiceVersion("v1")
+@ServiceVersion("v2")
 public class SlamServiceV2Impl implements SlamService {
 
   private SlamProperties slamProperties;

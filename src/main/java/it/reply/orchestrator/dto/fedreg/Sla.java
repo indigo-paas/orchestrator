@@ -19,6 +19,7 @@ package it.reply.orchestrator.dto.fedreg;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import javax.validation.constraints.NotNull;
 import lombok.AccessLevel;
@@ -42,11 +43,11 @@ public class Sla {
 
   @JsonProperty("start_date")
   @NotNull
-  private String startDate;
+  private Date startDate;
 
   @JsonProperty("end_date")
   @NotNull
-  private String endDate;
+  private Date endDate;
 
   @JsonProperty("uid")
   @NotNull

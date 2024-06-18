@@ -18,37 +18,16 @@
 package it.reply.orchestrator.dto.fedreg;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.ArrayList;
-import java.util.List;
 import javax.validation.constraints.NotNull;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@Builder
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor(access = AccessLevel.PROTECTED)
-public class IdentityProvider {
+public class AuthMethod {
 
-  @JsonProperty("description")
-  private String description;
-
-  @JsonProperty("endpoint")
+  @JsonProperty("idp_name")
   @NotNull
-  private String endpoint;
+  private String idpName;
 
-  @JsonProperty("group_claim")
+  @JsonProperty("protocol")
   @NotNull
-  private String groupClaim;
+  private String protocol;
 
-  @JsonProperty("uid")
-  @NotNull
-  private String uid;
-
-  @JsonProperty("providers")
-  @Builder.Default
-  private List<Provider> providers = new ArrayList<>();
 }

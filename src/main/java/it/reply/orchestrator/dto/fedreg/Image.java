@@ -60,10 +60,10 @@ public class Image {
   private String kernelId;
 
   @JsonProperty("cuda_support")
-  private String cudaSupport;
+  private Boolean cudaSupport;
 
   @JsonProperty("gpu_driver")
-  private String gpuDriver;
+  private Boolean gpuDriver;
 
   @JsonProperty("is_public")
   private Boolean isPublic;

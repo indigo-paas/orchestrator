@@ -58,4 +58,7 @@ public class Provider {
   @NotNull
   private String uid;
 
+  @JsonProperty("relationship")
+  private AuthMethod relationship;
+
 }

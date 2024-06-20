@@ -23,7 +23,6 @@ import it.reply.orchestrator.dto.slam.Service;
 import it.reply.orchestrator.service.CmdbService;
 import it.reply.orchestrator.service.security.OAuth2TokenService;
 import it.reply.orchestrator.utils.WorkflowConstants;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -31,7 +30,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import org.flowable.engine.delegate.DelegateExecution;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

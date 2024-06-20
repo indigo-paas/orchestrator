@@ -48,4 +48,37 @@ public class Quota {
   @NotNull
   private Service service;
 
+  @JsonProperty("cores")
+  private Integer cores;
+
+  @JsonProperty("instances")
+  private Integer instances;
+
+  @JsonProperty("ram")
+  private Integer ram;
+
+  @JsonProperty("gigabytes")
+  private Integer gigabytes;
+
+  @JsonProperty("per_volume_gigabytes")
+  private Integer perVolumeGigabytes;
+
+  @JsonProperty("volumes")
+  private Integer volumes;
+
+  @JsonProperty("public_ips")
+  private Integer publicIps;
+
+  @JsonProperty("networks")
+  private Integer networks;
+
+  @JsonProperty("ports")
+  private Integer ports;
+
+  @JsonProperty("security_groups")
+  private Integer securityGroups;
+
+  @JsonProperty("security_group_rules")
+  private Integer securityGroupsRules;
+
 }

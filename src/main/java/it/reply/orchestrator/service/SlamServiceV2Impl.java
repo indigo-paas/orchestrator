@@ -85,7 +85,7 @@ public class SlamServiceV2Impl implements SlamService {
           String serviceType = quotaFedReg.getService().getType();
           String serviceId = quotaFedReg.getService().getUid();
 
-          if (!listOfServiceId.contains(serviceId)) {
+          if (Boolean.FALSE.equals(quotaFedReg.getUsage())) {
             Priority priority = new Priority(slaFedReg.getUid(), serviceId, DEFAULT_WEIGHT);
             listOfServiceId.add(serviceId);
 

@@ -40,6 +40,9 @@ public class Quota {
   @JsonProperty("type")
   private String type;
 
+  @JsonProperty("usage")
+  private Boolean usage;
+
   @JsonProperty("uid")
   @NotNull
   private String uid;

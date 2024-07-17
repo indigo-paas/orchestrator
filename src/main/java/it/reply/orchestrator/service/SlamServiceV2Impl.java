@@ -22,10 +22,14 @@ import it.reply.orchestrator.config.properties.SlamProperties;
 import it.reply.orchestrator.dal.entity.OidcTokenId;
 import it.reply.orchestrator.dto.fedreg.Project;
 import it.reply.orchestrator.dto.fedreg.UserGroup;
+import it.reply.orchestrator.dto.slam.Preference;
+import it.reply.orchestrator.dto.slam.PreferenceCustomer;
+import it.reply.orchestrator.dto.slam.Priority;
 import it.reply.orchestrator.dto.slam.SlamPreferences;
 import it.reply.orchestrator.exception.service.DeploymentException;
 import it.reply.orchestrator.service.security.OAuth2TokenService;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
@@ -54,6 +58,8 @@ public class SlamServiceV2Impl implements SlamService {
 
   private RestTemplate restTemplate;
 
+  private static final Double DEFAULT_WEIGHT = 1.0;
+
   /**
    * Creates a new SlamServiceImpl.
    *
@@ -68,17 +74,44 @@ public class SlamServiceV2Impl implements SlamService {
     this.restTemplate = restTemplateBuilder.build();
   }
 
-  // private SlamPreferences remapAttributes(UserGroup userGroup) {
-  // SlamPreferences slamPreferences;
+  private SlamPreferences remapAttributes(UserGroup userGroup) {
+    List<Preference> listOfPreference = new ArrayList<>();
+    List<PreferenceCustomer> preferences = new ArrayList<>();
+    List<String> serviceTypesPresent = new ArrayList<>();
+    List<String> listOfServiceId = new ArrayList<>();
+    userGroup.getSlas().forEach(slaFedReg -> {
+      slaFedReg.getProjects().forEach(projectFedReg -> {
+        projectFedReg.getQuotas().forEach(quotaFedReg -> {
+          String serviceType = quotaFedReg.getService().getType();
+          String serviceId = quotaFedReg.getService().getUid();
 
-  // userGroup.getSlas.forEach(sla -> {
-  // Preference preference;
-  // preference.setCustomer(userGroup.getId());
-  // preference.setId(null);
-  // slamPreferences.setPreferences(null);
+          if (!listOfServiceId.contains(serviceId)) {
+            Priority priority = new Priority(slaFedReg.getUid(), serviceId, DEFAULT_WEIGHT);
+            listOfServiceId.add(serviceId);
 
-  // });
-  // }
+            if (serviceTypesPresent.contains(serviceType)) {
+              preferences.forEach(preferencesElem -> {
+                if (preferencesElem.getServiceType().equals(serviceType)) {
+                  preferencesElem.getPriority().add(priority);
+                }
+              });
+            } else {
+              serviceTypesPresent.add(serviceType);
+              List<Priority> listOfPriorities = new ArrayList<>();
+              listOfPriorities.add(priority);
+              PreferenceCustomer preferenceCustomer =
+                  new PreferenceCustomer(serviceType, listOfPriorities);
+              preferences.add(preferenceCustomer);
+            }
+          }
+        });
+      });
+    });
+    Preference preference = new Preference(userGroup.getUid(), preferences, null);
+    listOfPreference.add(preference);
+    SlamPreferences slamPreferences = new SlamPreferences(listOfPreference, new ArrayList<>());
+    return slamPreferences;
+  }
 
   @Override
   public SlamPreferences getCustomerPreferences(OidcTokenId tokenId, @Nullable String userGroup) {
@@ -108,8 +141,8 @@ public class SlamServiceV2Impl implements SlamService {
     URI requestUriFedRegProject = UriComponentsBuilder
         .fromHttpUrl("https://fedreg-dev.cloud.infn.it/fed-reg/api/v1/projects/")
         .queryParam("with_conn", "true")
-        .queryParam("user_group_uid", "f22c706974cd42ef9824dec311660506")
-        .queryParam("provider_uid", "5da3cbaccf5940d9885e6a7fa7450137").build().normalize().toUri();
+        .queryParam("user_group_uid", "ddb06273f5d34473a7f5742bd531a8f4")
+        .queryParam("provider_uid", "ee70b67629da4a768adf03fe75f6c845").build().normalize().toUri();
 
     List<UserGroup> userGroupCall =
         oauth2TokenService.executeWithClientForResult(tokenId, accessToken -> {
@@ -130,6 +163,8 @@ public class SlamServiceV2Impl implements SlamService {
           return restTemplate2.exchange(requestBuilder.build(),
               new ParameterizedTypeReference<List<Project>>() {});
         }, OAuth2TokenService.restTemplateTokenRefreshEvaluator).getBody();
+
+    SlamPreferences testSlamPreferences = remapAttributes(userGroupCall.get(0));
 
     try {
       return oauth2TokenService.executeWithClientForResult(tokenId, accessToken -> {

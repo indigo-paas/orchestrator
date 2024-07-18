@@ -17,6 +17,7 @@
 
 package it.reply.orchestrator.service;
 
+import com.google.common.collect.Lists;
 import it.reply.orchestrator.annotation.ServiceVersion;
 import it.reply.orchestrator.config.properties.SlamProperties;
 import it.reply.orchestrator.dal.entity.OidcTokenId;
@@ -25,11 +26,15 @@ import it.reply.orchestrator.dto.fedreg.UserGroup;
 import it.reply.orchestrator.dto.slam.Preference;
 import it.reply.orchestrator.dto.slam.PreferenceCustomer;
 import it.reply.orchestrator.dto.slam.Priority;
+import it.reply.orchestrator.dto.slam.Restrictions;
 import it.reply.orchestrator.dto.slam.SlamPreferences;
+import it.reply.orchestrator.dto.slam.Target;
 import it.reply.orchestrator.exception.service.DeploymentException;
 import it.reply.orchestrator.service.security.OAuth2TokenService;
+import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
@@ -60,6 +65,8 @@ public class SlamServiceV2Impl implements SlamService {
 
   private static final Double DEFAULT_WEIGHT = 1.0;
 
+  private static final List<String> ATTRIBUTES_TO_DISCARD = Lists.newArrayList("description", "perUser", "type", "usage", "uid", "service");
+
   /**
    * Creates a new SlamServiceImpl.
    *
@@ -82,6 +89,7 @@ public class SlamServiceV2Impl implements SlamService {
     userGroup.getSlas().forEach(slaFedReg -> {
       slaFedReg.getProjects().forEach(projectFedReg -> {
         projectFedReg.getQuotas().forEach(quotaFedReg -> {
+          // Qua dovrei definire e riempire i singoli target
           String serviceType = quotaFedReg.getService().getType();
           String serviceId = quotaFedReg.getService().getUid();
 
@@ -111,6 +119,78 @@ public class SlamServiceV2Impl implements SlamService {
     listOfPreference.add(preference);
     SlamPreferences slamPreferences = new SlamPreferences(listOfPreference, new ArrayList<>());
     return slamPreferences;
+  }
+
+  private void remapAttributesForSla(UserGroup userGroup) {
+    userGroup.getSlas().forEach(slaFedReg -> {
+
+      slaFedReg.getProjects().forEach(projectFedReg -> {
+        // could go outside this loop
+        HashMap<it.reply.orchestrator.dto.fedreg.Service, HashMap<String, Restrictions>> mapForTargets = new HashMap<>();
+
+        projectFedReg.getQuotas().forEach(quotaFedReg -> {
+          if (Boolean.FALSE.equals(quotaFedReg.getUsage())) {
+            Field[] fields = quotaFedReg.getClass().getDeclaredFields();
+            HashMap<String, Restrictions> mapForRestrictions = new HashMap<>();
+            if (mapForTargets.containsKey(quotaFedReg.getService())) {
+              mapForRestrictions = mapForTargets.get(quotaFedReg.getService());
+            }
+
+            for (Field f : fields) {
+              f.setAccessible(true);
+              String field = f.getName();
+              // Retrive the value of the filed f of the object quotaFedReg
+              Object valueObject;
+              try {
+                valueObject = f.get(quotaFedReg);
+              } catch (IllegalArgumentException | IllegalAccessException e) {
+                valueObject = null;
+                e.printStackTrace();
+              }
+
+              if (ATTRIBUTES_TO_DISCARD.contains(field) || valueObject == null) {
+                continue;
+              }
+
+              // Fix casting of value (it depends on f.type)
+              Integer value = (Integer) valueObject;
+              Restrictions restriction = new Restrictions();
+              restriction.setInstanceGuaranteed(null);
+              restriction.setInstanceLimit(null);
+              if (mapForRestrictions.containsKey(field)) {
+                restriction = mapForRestrictions.get(field);
+              }
+              if (Boolean.FALSE.equals(quotaFedReg.getPerUser())) {
+                restriction.setTotalGuaranteed(value);
+                restriction.setTotalLimit(value);
+              } else {
+                restriction.setUserGuaranteed(value);
+                restriction.setUserLimit(value);
+              }
+              mapForRestrictions.put(field, restriction);
+            }
+
+            mapForTargets.put(quotaFedReg.getService(),mapForRestrictions);
+          }
+
+        });
+
+        List<it.reply.orchestrator.dto.slam.Service> slamServices = new ArrayList<>();
+        mapForTargets.keySet().forEach(service -> {
+          HashMap<String, Restrictions> value = mapForTargets.get(service);
+          List<Target> targets = new ArrayList<>();
+          value.keySet().forEach(key -> {
+            Target target = new Target(key, null, value.get(key));
+            targets.add(target); 
+          });
+          it.reply.orchestrator.dto.slam.Service slamService =
+              new it.reply.orchestrator.dto.slam.Service(service.getType(), service.getUid(), targets);
+          slamServices.add(slamService);
+        });
+        String test = "e";
+      });
+
+    });
   }
 
   @Override
@@ -164,7 +244,8 @@ public class SlamServiceV2Impl implements SlamService {
               new ParameterizedTypeReference<List<Project>>() {});
         }, OAuth2TokenService.restTemplateTokenRefreshEvaluator).getBody();
 
-    SlamPreferences testSlamPreferences = remapAttributes(userGroupCall.get(0));
+    //SlamPreferences testSlamPreferences = remapAttributes(userGroupCall.get(0));
+    remapAttributesForSla(userGroupCall.get(0));
 
     try {
       return oauth2TokenService.executeWithClientForResult(tokenId, accessToken -> {

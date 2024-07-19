@@ -27,12 +27,14 @@ import it.reply.orchestrator.dto.slam.Preference;
 import it.reply.orchestrator.dto.slam.PreferenceCustomer;
 import it.reply.orchestrator.dto.slam.Priority;
 import it.reply.orchestrator.dto.slam.Restrictions;
+import it.reply.orchestrator.dto.slam.Sla;
 import it.reply.orchestrator.dto.slam.SlamPreferences;
 import it.reply.orchestrator.dto.slam.Target;
 import it.reply.orchestrator.exception.service.DeploymentException;
 import it.reply.orchestrator.service.security.OAuth2TokenService;
 import java.lang.reflect.Field;
 import java.net.URI;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -65,7 +67,8 @@ public class SlamServiceV2Impl implements SlamService {
 
   private static final Double DEFAULT_WEIGHT = 1.0;
 
-  private static final List<String> ATTRIBUTES_TO_DISCARD = Lists.newArrayList("description", "perUser", "type", "usage", "uid", "service");
+  private static final List<String> ATTRIBUTES_TO_DISCARD =
+      Lists.newArrayList("description", "perUser", "type", "usage", "uid", "service");
 
   /**
    * Creates a new SlamServiceImpl.
@@ -81,7 +84,7 @@ public class SlamServiceV2Impl implements SlamService {
     this.restTemplate = restTemplateBuilder.build();
   }
 
-  private SlamPreferences remapAttributes(UserGroup userGroup) {
+  private List<Preference> remapAttributes(UserGroup userGroup) {
     List<Preference> listOfPreference = new ArrayList<>();
     List<PreferenceCustomer> preferences = new ArrayList<>();
     List<String> serviceTypesPresent = new ArrayList<>();
@@ -117,16 +120,16 @@ public class SlamServiceV2Impl implements SlamService {
     });
     Preference preference = new Preference(userGroup.getUid(), preferences, null);
     listOfPreference.add(preference);
-    SlamPreferences slamPreferences = new SlamPreferences(listOfPreference, new ArrayList<>());
-    return slamPreferences;
+    return listOfPreference;
   }
 
-  private void remapAttributesForSla(UserGroup userGroup) {
+  private List<Sla> remapAttributesForSla(UserGroup userGroup) {
+    List<Sla> listOfSlas = new ArrayList<>();
     userGroup.getSlas().forEach(slaFedReg -> {
-
       slaFedReg.getProjects().forEach(projectFedReg -> {
         // could go outside this loop
-        HashMap<it.reply.orchestrator.dto.fedreg.Service, HashMap<String, Restrictions>> mapForTargets = new HashMap<>();
+        HashMap<it.reply.orchestrator.dto.fedreg.Service, HashMap<String, Restrictions>>
+            mapForTargets = new HashMap<>();
 
         projectFedReg.getQuotas().forEach(quotaFedReg -> {
           if (Boolean.FALSE.equals(quotaFedReg.getUsage())) {
@@ -170,7 +173,7 @@ public class SlamServiceV2Impl implements SlamService {
               mapForRestrictions.put(field, restriction);
             }
 
-            mapForTargets.put(quotaFedReg.getService(),mapForRestrictions);
+            mapForTargets.put(quotaFedReg.getService(), mapForRestrictions);
           }
 
         });
@@ -181,16 +184,21 @@ public class SlamServiceV2Impl implements SlamService {
           List<Target> targets = new ArrayList<>();
           value.keySet().forEach(key -> {
             Target target = new Target(key, null, value.get(key));
-            targets.add(target); 
+            targets.add(target);
           });
           it.reply.orchestrator.dto.slam.Service slamService =
-              new it.reply.orchestrator.dto.slam.Service(service.getType(), service.getUid(), targets);
+              new it.reply.orchestrator.dto.slam.Service(service.getType(), service.getUid(),
+                  targets);
           slamServices.add(slamService);
         });
-        String test = "e";
+        Sla sla = new Sla(userGroup.getUid(), projectFedReg.getProvider().getUid(),
+            new SimpleDateFormat("yyyy-MM-dd").format(slaFedReg.getStartDate()),
+            new SimpleDateFormat("yyyy-MM-dd").format(slaFedReg.getEndDate()), slamServices,
+            slaFedReg.getUid());
+        listOfSlas.add(sla);
       });
-
     });
+    return listOfSlas;
   }
 
   @Override
@@ -244,9 +252,11 @@ public class SlamServiceV2Impl implements SlamService {
               new ParameterizedTypeReference<List<Project>>() {});
         }, OAuth2TokenService.restTemplateTokenRefreshEvaluator).getBody();
 
-    //SlamPreferences testSlamPreferences = remapAttributes(userGroupCall.get(0));
+    // SlamPreferences testSlamPreferences = remapAttributes(userGroupCall.get(0));
     remapAttributesForSla(userGroupCall.get(0));
 
+    SlamPreferences slamPreferences = new SlamPreferences(remapAttributes(userGroupCall.get(0)),
+        remapAttributesForSla(userGroupCall.get(0)));
     try {
       return oauth2TokenService.executeWithClientForResult(tokenId, accessToken -> {
         HeadersBuilder<?> requestBuilder = RequestEntity.get(requestUri);

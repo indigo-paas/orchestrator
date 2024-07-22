@@ -30,7 +30,6 @@ import it.reply.orchestrator.dto.slam.Restrictions;
 import it.reply.orchestrator.dto.slam.Sla;
 import it.reply.orchestrator.dto.slam.SlamPreferences;
 import it.reply.orchestrator.dto.slam.Target;
-import it.reply.orchestrator.exception.service.DeploymentException;
 import it.reply.orchestrator.service.security.OAuth2TokenService;
 import java.lang.reflect.Field;
 import java.net.URI;
@@ -51,7 +50,6 @@ import org.springframework.http.RequestEntity;
 import org.springframework.http.RequestEntity.HeadersBuilder;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -257,18 +255,19 @@ public class SlamServiceV2Impl implements SlamService {
 
     SlamPreferences slamPreferences = new SlamPreferences(remapAttributes(userGroupCall.get(0)),
         remapAttributesForSla(userGroupCall.get(0)));
-    try {
-      return oauth2TokenService.executeWithClientForResult(tokenId, accessToken -> {
-        HeadersBuilder<?> requestBuilder = RequestEntity.get(requestUri);
-        if (accessToken != null) {
-          requestBuilder.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        }
-        return restTemplate.exchange(requestBuilder.build(), SlamPreferences.class);
-      }, OAuth2TokenService.restTemplateTokenRefreshEvaluator).getBody();
-    } catch (RestClientException ex) {
-      throw new DeploymentException(
-          "Error fetching SLA for customer <" + slamCustomer + "> from SLAM.", ex);
-    }
+    return slamPreferences;
+    // try {
+    //   return oauth2TokenService.executeWithClientForResult(tokenId, accessToken -> {
+    //     HeadersBuilder<?> requestBuilder = RequestEntity.get(requestUri);
+    //     if (accessToken != null) {
+    //       requestBuilder.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+    //     }
+    //     return restTemplate.exchange(requestBuilder.build(), SlamPreferences.class);
+    //   }, OAuth2TokenService.restTemplateTokenRefreshEvaluator).getBody();
+    // } catch (RestClientException ex) {
+    //   throw new DeploymentException(
+    //       "Error fetching SLA for customer <" + slamCustomer + "> from SLAM.", ex);
+    // }
   }
 
 }

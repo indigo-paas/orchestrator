@@ -23,7 +23,11 @@ import it.reply.orchestrator.dal.entity.OidcTokenId;
 import it.reply.orchestrator.dto.RankCloudProvidersMessage;
 import it.reply.orchestrator.dto.cmdb.CloudProvider;
 import it.reply.orchestrator.dto.cmdb.CloudService;
+import it.reply.orchestrator.dto.cmdb.CloudService.SupportedIdp;
+import it.reply.orchestrator.dto.cmdb.CloudService.VolumeType;
+import it.reply.orchestrator.dto.cmdb.CloudServiceType;
 import it.reply.orchestrator.dto.cmdb.CmdbIdentifiable;
+import it.reply.orchestrator.dto.cmdb.ComputeService;
 import it.reply.orchestrator.dto.cmdb.Flavor;
 import it.reply.orchestrator.dto.cmdb.Image;
 import it.reply.orchestrator.dto.cmdb.Tenant;
@@ -31,12 +35,18 @@ import it.reply.orchestrator.dto.cmdb.wrappers.CmdbDataWrapper;
 import it.reply.orchestrator.dto.cmdb.wrappers.CmdbHasManyList;
 import it.reply.orchestrator.dto.cmdb.wrappers.CmdbRow;
 import it.reply.orchestrator.dto.fedreg.Project;
+import it.reply.orchestrator.dto.fedreg.Quota;
 import it.reply.orchestrator.exception.service.DeploymentException;
 import it.reply.orchestrator.service.security.OAuth2TokenService;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.net.ssl.SSLContext;
 import lombok.extern.slf4j.Slf4j;
@@ -341,6 +351,76 @@ public class CmdbServiceV2Impl implements CmdbService {
     }
   }
 
+  private CloudProvider remapAttributes(Project project, String providerId) {
+    List<SupportedIdp> supportedIdps = new ArrayList<>();
+    List<VolumeType> volumeTypes = new ArrayList<>();
+    AtomicReference<String> idpProtocol = new AtomicReference<>(null);
+    HashMap<String, CloudService> mapOfCloudServices = new HashMap<>();
+    project.getSla().getUserGroup().getIdentityProvider().getProviders().forEach(provider -> {
+      SupportedIdp supportedIdp =
+          new SupportedIdp(project.getSla().getUserGroup().getIdentityProvider().getEndpoint(),
+              provider.getRelationship().getIdpName());
+      supportedIdps.add(supportedIdp);
+      idpProtocol.set(provider.getRelationship().getProtocol());
+    });
+
+    for (Quota quotaFedReg : project.getQuotas()) {
+      URL url = null;
+      try {
+        url = new URL(quotaFedReg.getService().getEndpoint());
+      } catch (MalformedURLException e) {
+        LOG.error(e.getMessage());
+      }
+
+      if (!CloudServiceType
+          .valueOf(quotaFedReg.getService().getType().replace('-', '_').toUpperCase()).toString()
+          .equals("COMPUTE")) {
+        continue;
+      }
+
+      // CloudService cloudService =
+      // new CloudService(quotaFedReg.getService().getUid(), quotaFedReg.getService().getName(),
+      // quotaFedReg.getService().getEndpoint(), null, project.getProvider().getUid(),
+      // CloudServiceType
+      // .valueOf(quotaFedReg.getService().getType().replace('-', '_').toUpperCase()),
+      // project.getProvider().getIsPublic(), project.getUid(),
+      // quotaFedReg.getService().getRegion().getUid(), url.getHost(), null, true,
+      // idpProtocol.get(), true, supportedIdps, volumeTypes);
+
+      // ComputeService computeService = new ComputeService
+      List<Image> listOfImages = new ArrayList<>();
+      List<Flavor> listOfFlavors = new ArrayList<>();
+      project.getImages().forEach(imageElem -> {
+        Image image = new Image(imageElem.getUid(), imageElem.getUuid(), imageElem.getName(),
+            imageElem.getDescription(), imageElem.getArchitecture(), imageElem.getOsType(),
+            imageElem.getOsDistro(), imageElem.getOsVersion(), null, null, imageElem.getGpuDriver(),
+            null, imageElem.getCudaSupport(), null, null);
+        listOfImages.add(image);
+      });
+      project.getFlavors().forEach(flavorElem -> {
+        Flavor flavor = new Flavor(flavorElem.getUid(), flavorElem.getUuid(), flavorElem.getName(),
+            flavorElem.getRam().doubleValue(), flavorElem.getVcpus(),
+            flavorElem.getDisk().doubleValue(), flavorElem.getGpus(), flavorElem.getGpuVendor(),
+            flavorElem.getGpuModel(), flavorElem.getInfiniband());
+        listOfFlavors.add(flavor);
+      });
+
+      ComputeService computeService =
+          new ComputeService(quotaFedReg.getService().getUid(), quotaFedReg.getService().getName(),
+              quotaFedReg.getService().getEndpoint(), null, project.getProvider().getUid(),
+              CloudServiceType
+                  .valueOf(quotaFedReg.getService().getType().replace('-', '_').toUpperCase()),
+              project.getProvider().getIsPublic(), project.getUid(),
+              quotaFedReg.getService().getRegion().getUid(), url.getHost(), null, listOfImages,
+              listOfFlavors, true, idpProtocol.get(), true, supportedIdps, volumeTypes, null, null,
+              null, null, null);
+      mapOfCloudServices.put(quotaFedReg.getService().getUid(), computeService);
+    }
+    CloudProvider cloudProvider = new CloudProvider(project.getProvider().getUid(),
+        project.getProvider().getName(), mapOfCloudServices);
+    return cloudProvider;
+  }
+
   @Override
   public CloudProvider fillCloudProviderInfo(String providerId,
       Set<String> servicesWithSla, String organisation, RankCloudProvidersMessage rankCloudProvidersMessage) {
@@ -371,8 +451,8 @@ public class CmdbServiceV2Impl implements CmdbService {
           return restTemplate.exchange(requestBuilder.build(),
               new ParameterizedTypeReference<List<Project>>() {});
         }, OAuth2TokenService.restTemplateTokenRefreshEvaluator).getBody();
-    String pippo = "e";
-    return new CloudProvider();
+
+    return remapAttributes(projectCall.get(0), providerId);
   }
 
 }

@@ -356,26 +356,30 @@ public class CmdbServiceV2Impl implements CmdbService {
     List<VolumeType> volumeTypes = new ArrayList<>();
     AtomicReference<String> idpProtocol = new AtomicReference<>(null);
     HashMap<String, CloudService> mapOfCloudServices = new HashMap<>();
+    // qui posso evitare il loop perchè a questo livello il provider è uno solo
     project.getSla().getUserGroup().getIdentityProvider().getProviders().forEach(provider -> {
-      SupportedIdp supportedIdp =
-          new SupportedIdp(project.getSla().getUserGroup().getIdentityProvider().getEndpoint(),
-              provider.getRelationship().getIdpName());
+      SupportedIdp supportedIdp = new SupportedIdp(provider.getRelationship().getIdpName(),
+          project.getSla().getUserGroup().getIdentityProvider().getEndpoint());
       supportedIdps.add(supportedIdp);
       idpProtocol.set(provider.getRelationship().getProtocol());
     });
 
     for (Quota quotaFedReg : project.getQuotas()) {
+      String serviceType = quotaFedReg.getService().getType().replace('-', '_').toUpperCase();
+      // skip quotaFedReg if is related to resource usage or if it is specific for a user
+      // or skip if the type of service is different to compute
+      if (Boolean.TRUE.equals(quotaFedReg.getUsage())
+          || Boolean.TRUE.equals(quotaFedReg.getPerUser())
+          || !CloudServiceType.valueOf(serviceType).equals(CloudServiceType.COMPUTE)) {
+            //toString().equals("COMPUTE")
+        continue;
+      }
+
       URL url = null;
       try {
         url = new URL(quotaFedReg.getService().getEndpoint());
       } catch (MalformedURLException e) {
         LOG.error(e.getMessage());
-      }
-
-      if (!CloudServiceType
-          .valueOf(quotaFedReg.getService().getType().replace('-', '_').toUpperCase()).toString()
-          .equals("COMPUTE")) {
-        continue;
       }
 
       // CloudService cloudService =
@@ -405,17 +409,17 @@ public class CmdbServiceV2Impl implements CmdbService {
         listOfFlavors.add(flavor);
       });
 
+      // ricordarsi di mettere attributo=valore_attributo per ricordarsi l'ordine
       ComputeService computeService =
           new ComputeService(quotaFedReg.getService().getUid(), quotaFedReg.getService().getName(),
               quotaFedReg.getService().getEndpoint(), null, project.getProvider().getUid(),
-              CloudServiceType
-                  .valueOf(quotaFedReg.getService().getType().replace('-', '_').toUpperCase()),
-              project.getProvider().getIsPublic(), project.getUid(),
-              quotaFedReg.getService().getRegion().getUid(), url.getHost(), null, listOfImages,
-              listOfFlavors, true, idpProtocol.get(), true, supportedIdps, volumeTypes, null, null,
-              null, null, null);
+              CloudServiceType.valueOf(serviceType), project.getProvider().getIsPublic(),
+              project.getUid(), quotaFedReg.getService().getRegion().getUid(), url.getHost(), null,
+              listOfImages, listOfFlavors, true, idpProtocol.get(), true, supportedIdps,
+              volumeTypes, null, null, null, null, null);
       mapOfCloudServices.put(quotaFedReg.getService().getUid(), computeService);
     }
+
     CloudProvider cloudProvider = new CloudProvider(project.getProvider().getUid(),
         project.getProvider().getName(), mapOfCloudServices);
     return cloudProvider;

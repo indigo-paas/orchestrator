@@ -34,6 +34,8 @@ import it.reply.orchestrator.dto.cmdb.Tenant;
 import it.reply.orchestrator.dto.cmdb.wrappers.CmdbDataWrapper;
 import it.reply.orchestrator.dto.cmdb.wrappers.CmdbHasManyList;
 import it.reply.orchestrator.dto.cmdb.wrappers.CmdbRow;
+import it.reply.orchestrator.dto.fedreg.AuthMethod;
+import it.reply.orchestrator.dto.fedreg.Network;
 import it.reply.orchestrator.dto.fedreg.Project;
 import it.reply.orchestrator.dto.fedreg.Quota;
 import it.reply.orchestrator.exception.service.DeploymentException;
@@ -351,27 +353,42 @@ public class CmdbServiceV2Impl implements CmdbService {
     }
   }
 
-  private CloudProvider remapAttributes(Project project, String providerId) {
+  private CloudProvider remapAttributes(Project project) {
     List<SupportedIdp> supportedIdps = new ArrayList<>();
     List<VolumeType> volumeTypes = new ArrayList<>();
     AtomicReference<String> idpProtocol = new AtomicReference<>(null);
     HashMap<String, CloudService> mapOfCloudServices = new HashMap<>();
-    // qui posso evitare il loop perchè a questo livello il provider è uno solo
-    project.getSla().getUserGroup().getIdentityProvider().getProviders().forEach(provider -> {
-      SupportedIdp supportedIdp = new SupportedIdp(provider.getRelationship().getIdpName(),
-          project.getSla().getUserGroup().getIdentityProvider().getEndpoint());
-      supportedIdps.add(supportedIdp);
-      idpProtocol.set(provider.getRelationship().getProtocol());
-    });
+    AuthMethod relationship = project.getSla().getUserGroup().getIdentityProvider().getProviders()
+        .get(0).getRelationship();
+    SupportedIdp supportedIdp = new SupportedIdp(relationship.getIdpName(),
+        project.getSla().getUserGroup().getIdentityProvider().getEndpoint());
+    supportedIdps.add(supportedIdp);
+    idpProtocol.set(relationship.getProtocol());
+    String publicNetworkName = null;
+    String privateNetworkName = null;
+    String privateNetworkProxyHost = null;
+    String privateNetworkProxyUser = null;
+
+    for (Network network: project.getNetworks()){
+      if (network.getIsDefault()){
+        if (network.getIsShared()){
+          publicNetworkName = network.getName();
+        } else {
+          privateNetworkName = network.getName();
+          privateNetworkProxyHost = network.getProxyHost();
+          privateNetworkProxyUser = network.getProxyUser();
+        }
+      }
+    }
 
     for (Quota quotaFedReg : project.getQuotas()) {
       String serviceType = quotaFedReg.getService().getType().replace('-', '_').toUpperCase();
       // skip quotaFedReg if is related to resource usage or if it is specific for a user
       // or skip if the type of service is different to compute
       if (Boolean.TRUE.equals(quotaFedReg.getUsage())
-          || Boolean.TRUE.equals(quotaFedReg.getPerUser())
-          || !CloudServiceType.valueOf(serviceType).equals(CloudServiceType.COMPUTE)) {
-            //toString().equals("COMPUTE")
+          || Boolean.TRUE.equals(quotaFedReg.getPerUser())) {
+        // !CloudServiceType.valueOf(serviceType).equals(CloudServiceType.COMPUTE)
+        // toString().equals("COMPUTE")
         continue;
       }
 
@@ -392,32 +409,43 @@ public class CmdbServiceV2Impl implements CmdbService {
       // idpProtocol.get(), true, supportedIdps, volumeTypes);
 
       // ComputeService computeService = new ComputeService
-      List<Image> listOfImages = new ArrayList<>();
-      List<Flavor> listOfFlavors = new ArrayList<>();
-      project.getImages().forEach(imageElem -> {
-        Image image = new Image(imageElem.getUid(), imageElem.getUuid(), imageElem.getName(),
-            imageElem.getDescription(), imageElem.getArchitecture(), imageElem.getOsType(),
-            imageElem.getOsDistro(), imageElem.getOsVersion(), null, null, imageElem.getGpuDriver(),
-            null, imageElem.getCudaSupport(), null, null);
-        listOfImages.add(image);
-      });
-      project.getFlavors().forEach(flavorElem -> {
-        Flavor flavor = new Flavor(flavorElem.getUid(), flavorElem.getUuid(), flavorElem.getName(),
-            flavorElem.getRam().doubleValue(), flavorElem.getVcpus(),
-            flavorElem.getDisk().doubleValue(), flavorElem.getGpus(), flavorElem.getGpuVendor(),
-            flavorElem.getGpuModel(), flavorElem.getInfiniband());
-        listOfFlavors.add(flavor);
-      });
+      if (CloudServiceType.valueOf(serviceType).equals(CloudServiceType.COMPUTE)) {
+        List<Image> listOfImages = new ArrayList<>();
+        List<Flavor> listOfFlavors = new ArrayList<>();
+        project.getImages().forEach(imageElem -> {
+          Image image = new Image(imageElem.getUid(), imageElem.getUuid(), imageElem.getName(),
+              imageElem.getDescription(), imageElem.getArchitecture(), imageElem.getOsType(),
+              imageElem.getOsDistro(), imageElem.getOsVersion(), null, null,
+              imageElem.getGpuDriver(), null, imageElem.getCudaSupport(), null, null);
+          listOfImages.add(image);
+        });
+        project.getFlavors().forEach(flavorElem -> {
+          Flavor flavor = new Flavor(flavorElem.getUid(), flavorElem.getUuid(),
+              flavorElem.getName(), flavorElem.getRam().doubleValue(), flavorElem.getVcpus(),
+              flavorElem.getDisk().doubleValue(), flavorElem.getGpus(), flavorElem.getGpuVendor(),
+              flavorElem.getGpuModel(), flavorElem.getInfiniband());
+          listOfFlavors.add(flavor);
+        });
 
-      // ricordarsi di mettere attributo=valore_attributo per ricordarsi l'ordine
-      ComputeService computeService =
-          new ComputeService(quotaFedReg.getService().getUid(), quotaFedReg.getService().getName(),
-              quotaFedReg.getService().getEndpoint(), null, project.getProvider().getUid(),
-              CloudServiceType.valueOf(serviceType), project.getProvider().getIsPublic(),
-              project.getUid(), quotaFedReg.getService().getRegion().getUid(), url.getHost(), null,
-              listOfImages, listOfFlavors, true, idpProtocol.get(), true, supportedIdps,
-              volumeTypes, null, null, null, null, null);
-      mapOfCloudServices.put(quotaFedReg.getService().getUid(), computeService);
+        // ricordarsi di mettere attributo=valore_attributo per ricordarsi l'ordine
+        ComputeService computeService = new ComputeService(quotaFedReg.getService().getUid(),
+            quotaFedReg.getService().getName(), quotaFedReg.getService().getEndpoint(), null,
+            project.getProvider().getUid(), CloudServiceType.valueOf(serviceType),
+            project.getProvider().getIsPublic(), project.getName(),
+            quotaFedReg.getService().getRegion().getName(), url.getHost(), null, listOfImages,
+            listOfFlavors, true, idpProtocol.get(), true, supportedIdps, volumeTypes,
+            publicNetworkName, null, privateNetworkName, privateNetworkProxyHost,
+            privateNetworkProxyUser);
+        mapOfCloudServices.put(quotaFedReg.getService().getUid(), computeService);
+      } else {
+        CloudService cloudService =
+            new CloudService(quotaFedReg.getService().getUid(), quotaFedReg.getService().getName(),
+                quotaFedReg.getService().getEndpoint(), null, project.getProvider().getUid(),
+                CloudServiceType.valueOf(serviceType), project.getProvider().getIsPublic(),
+                project.getName(), quotaFedReg.getService().getRegion().getName(), url.getHost(),
+                null, true, idpProtocol.get(), true, supportedIdps, volumeTypes);
+        mapOfCloudServices.put(quotaFedReg.getService().getUid(), cloudService);
+      }
     }
 
     CloudProvider cloudProvider = new CloudProvider(project.getProvider().getUid(),
@@ -441,8 +469,8 @@ public class CmdbServiceV2Impl implements CmdbService {
     RestTemplate restTemplate = new RestTemplate(factory);
 
     URI requestUriFedRegProject = UriComponentsBuilder
-        .fromHttpUrl("https://fedreg-dev.cloud.infn.it/fed-reg/api/v1/projects/")
-        .queryParam("with_conn", "true")
+        .fromHttpUrl(cmdbProperties.getUrl() + cmdbProperties.getTenantsListPath())
+        .queryParam("with_conn", true)
         .queryParam("user_group_uid", rankCloudProvidersMessage.getSlamPreferences().getPreferences().get(0).getCustomer())
         .queryParam("provider_uid", providerId).build().normalize().toUri();
 
@@ -456,7 +484,7 @@ public class CmdbServiceV2Impl implements CmdbService {
               new ParameterizedTypeReference<List<Project>>() {});
         }, OAuth2TokenService.restTemplateTokenRefreshEvaluator).getBody();
 
-    return remapAttributes(projectCall.get(0), providerId);
+    return remapAttributes(projectCall.get(0));
   }
 
 }

@@ -80,6 +80,24 @@ public class PrefilterCloudProviders extends BaseRankCloudProvidersCommand {
     Set<CloudProvider> providersToDiscard = new HashSet<>();
     Set<CloudService> servicesToDiscard = new HashSet<>();
 
+    rankCloudProvidersMessage.getCloudProviders().forEach((name, cloudProvider) -> {
+      cloudProvider.getServices().forEach((serviceName, cloudService) -> {
+        if (!cloudService.getType().equals(CloudServiceType.COMPUTE)) {
+          addServiceToDiscard(servicesToDiscard, cloudService);
+        }
+      });
+    });
+
+    discardProvidersAndServices(providersToDiscard, servicesToDiscard, rankCloudProvidersMessage);
+    // for (CloudProvider cloudProvider : rankCloudProvidersMessage.getCloudProviders().values()) {
+    //   cloudProvider
+    //       .getServices().values().stream()
+    //       .filter(servicesToDiscard::contains)
+    //       .forEach(computeServiceToDiscard -> cloudProvider
+    //           .getServices()
+    //           .remove(computeServiceToDiscard.getId()));
+    // }
+
     OidcTokenId requestedWithToken = rankCloudProvidersMessage.getRequestedWithToken();
     if (requestedWithToken != null) {
       String issuer = requestedWithToken.getOidcEntityId().getIssuer();
@@ -440,11 +458,11 @@ public class PrefilterCloudProviders extends BaseRankCloudProvidersCommand {
       RankCloudProvidersMessage rankCloudProvidersMessage) {
     // Add providers that doesn't have any compute service anymore
     for (CloudProvider cloudProvider : rankCloudProvidersMessage.getCloudProviders().values()) {
-      cloudProvider
-          .getServicesOfType(CloudServiceType.COMPUTE)
-          .stream()
-          .filter(servicesToDiscard::contains)
-          .forEach(computeServiceToDiscard -> cloudProvider
+      List<CloudService> l = cloudProvider
+      .getServices().values()
+      .stream()
+      .filter(servicesToDiscard::contains).collect(Collectors.toList());
+      l.forEach(computeServiceToDiscard -> cloudProvider
               .getServices()
               .remove(computeServiceToDiscard.getId()));
       if (cloudProvider.getServicesOfType(CloudServiceType.COMPUTE).isEmpty()) {

@@ -21,7 +21,6 @@ import com.google.common.collect.Lists;
 import it.reply.orchestrator.annotation.ServiceVersion;
 import it.reply.orchestrator.config.properties.SlamProperties;
 import it.reply.orchestrator.dal.entity.OidcTokenId;
-import it.reply.orchestrator.dto.fedreg.Project;
 import it.reply.orchestrator.dto.fedreg.UserGroup;
 import it.reply.orchestrator.dto.slam.Preference;
 import it.reply.orchestrator.dto.slam.PreferenceCustomer;
@@ -205,9 +204,9 @@ public class SlamServiceV2Impl implements SlamService {
     String slamCustomer =
         Optional.ofNullable(userGroup).orElse(oauth2TokenService.getOrganization(tokenId));
 
-    URI requestUri = UriComponentsBuilder
-        .fromHttpUrl(slamProperties.getUrl() + slamProperties.getCustomerPreferencesPath())
-        .buildAndExpand(slamCustomer).normalize().toUri();
+    // URI requestUri = UriComponentsBuilder
+    //     .fromHttpUrl(slamProperties.getUrl() + slamProperties.getCustomerPreferencesPath())
+    //     .buildAndExpand(slamCustomer).normalize().toUri();
 
     SSLContext sslContext = null;
 
@@ -219,16 +218,17 @@ public class SlamServiceV2Impl implements SlamService {
     RestTemplate restTemplate2 = new RestTemplate(factory);
 
     URI requestUriFedRegUserGroup = UriComponentsBuilder
-        .fromHttpUrl("https://fedreg-dev.cloud.infn.it/fed-reg/api/v1/user_groups/")
-        .queryParam("with_conn", "true").queryParam("name", slamCustomer)
-        .queryParam("idp_endpoint", tokenId.getOidcEntityId().getIssuer()).build().normalize()
+        .fromHttpUrl(slamProperties.getUrl() + slamProperties.getCustomerPreferencesPath())
+        .queryParam("with_conn", true).queryParam("name", slamCustomer)
+        .queryParam("idp_endpoint", tokenId.getOidcEntityId().getIssuer())
+        .queryParam("provider_status", "active").build().normalize()
         .toUri();
 
-    URI requestUriFedRegProject = UriComponentsBuilder
-        .fromHttpUrl("https://fedreg-dev.cloud.infn.it/fed-reg/api/v1/projects/")
-        .queryParam("with_conn", "true")
-        .queryParam("user_group_uid", "ddb06273f5d34473a7f5742bd531a8f4")
-        .queryParam("provider_uid", "ee70b67629da4a768adf03fe75f6c845").build().normalize().toUri();
+    // URI requestUriFedRegProject = UriComponentsBuilder
+    //     .fromHttpUrl("https://fedreg-dev.cloud.infn.it/fed-reg/api/v1/projects/")
+    //     .queryParam("with_conn", "true")
+    //     .queryParam("user_group_uid", "ddb06273f5d34473a7f5742bd531a8f4")
+    //     .queryParam("provider_uid", "ee70b67629da4a768adf03fe75f6c845").build().normalize().toUri();
 
     List<UserGroup> userGroupCall =
         oauth2TokenService.executeWithClientForResult(tokenId, accessToken -> {
@@ -240,18 +240,18 @@ public class SlamServiceV2Impl implements SlamService {
               new ParameterizedTypeReference<List<UserGroup>>() {});
         }, OAuth2TokenService.restTemplateTokenRefreshEvaluator).getBody();
 
-    List<Project> projectCall =
-        oauth2TokenService.executeWithClientForResult(tokenId, accessToken -> {
-          HeadersBuilder<?> requestBuilder = RequestEntity.get(requestUriFedRegProject);
-          if (accessToken != null) {
-            requestBuilder.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-          }
-          return restTemplate2.exchange(requestBuilder.build(),
-              new ParameterizedTypeReference<List<Project>>() {});
-        }, OAuth2TokenService.restTemplateTokenRefreshEvaluator).getBody();
+    // List<Project> projectCall =
+    //     oauth2TokenService.executeWithClientForResult(tokenId, accessToken -> {
+    //       HeadersBuilder<?> requestBuilder = RequestEntity.get(requestUriFedRegProject);
+    //       if (accessToken != null) {
+    //         requestBuilder.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+    //       }
+    //       return restTemplate2.exchange(requestBuilder.build(),
+    //           new ParameterizedTypeReference<List<Project>>() {});
+    //     }, OAuth2TokenService.restTemplateTokenRefreshEvaluator).getBody();
 
     // SlamPreferences testSlamPreferences = remapAttributes(userGroupCall.get(0));
-    remapAttributesForSla(userGroupCall.get(0));
+    // remapAttributesForSla(userGroupCall.get(0));
 
     SlamPreferences slamPreferences = new SlamPreferences(remapAttributes(userGroupCall.get(0)),
         remapAttributesForSla(userGroupCall.get(0)));

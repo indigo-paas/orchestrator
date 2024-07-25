@@ -127,74 +127,95 @@ public class SlamServiceV2Impl implements SlamService {
   private List<Sla> remapAttributesForSla(UserGroup userGroup) {
     List<Sla> listOfSlas = new ArrayList<>();
     userGroup.getSlas().forEach(slaFedReg -> {
+      HashMap<it.reply.orchestrator.dto.fedreg.Service, HashMap<String, Restrictions>> mapForTargets =
+            new HashMap<>();
       slaFedReg.getProjects().forEach(projectFedReg -> {
         // could go outside this loop
-        HashMap<it.reply.orchestrator.dto.fedreg.Service, HashMap<String, Restrictions>> mapForTargets =
-            new HashMap<>();
 
-        projectFedReg.getQuotas().forEach(quotaFedReg -> {
-          if (Boolean.FALSE.equals(quotaFedReg.getUsage())) {
-            Field[] fields = quotaFedReg.getClass().getDeclaredFields();
-            HashMap<String, Restrictions> mapForRestrictions = new HashMap<>();
-            if (mapForTargets.containsKey(quotaFedReg.getService())) {
-              mapForRestrictions = mapForTargets.get(quotaFedReg.getService());
+        for (Quota quotaFedReg : projectFedReg.getQuotas()) {
+          // Skip the quota if it refers to the current usage of resources
+          if (Boolean.TRUE.equals(quotaFedReg.getUsage())) {
+            continue;
+          }
+
+          Field[] fields = quotaFedReg.getClass().getDeclaredFields();
+          HashMap<String, Restrictions> mapForRestrictions = new HashMap<>();
+          if (mapForTargets.containsKey(quotaFedReg.getService())) {
+            mapForRestrictions = mapForTargets.get(quotaFedReg.getService());
+          }
+
+          // Loop over the fields of the Quota class.
+          for (Field f : fields) {
+            String fieldName = f.getName();
+            // Set the attributes as accessible
+            f.setAccessible(true);
+            // Retrive the value of the field f of the object quotaFedReg
+            Object valueObject;
+            try {
+              valueObject = f.get(quotaFedReg);
+            } catch (IllegalArgumentException | IllegalAccessException e) {
+              valueObject = null;
+              e.printStackTrace();
             }
 
-            for (Field f : fields) {
-              f.setAccessible(true);
-              String field = f.getName();
-              // Retrive the value of the filed f of the object quotaFedReg
-              Object valueObject;
-              try {
-                valueObject = f.get(quotaFedReg);
-              } catch (IllegalArgumentException | IllegalAccessException e) {
-                valueObject = null;
-                e.printStackTrace();
-              }
-
-              if (ATTRIBUTES_TO_DISCARD.contains(field) || valueObject == null) {
-                continue;
-              }
-
-              // Fix casting of value (it depends on f.type)
-              Integer value = (Integer) valueObject;
-              Restrictions restriction = new Restrictions();
-              restriction.setInstanceGuaranteed(null);
-              restriction.setInstanceLimit(null);
-              if (mapForRestrictions.containsKey(field)) {
-                restriction = mapForRestrictions.get(field);
-              }
-              if (Boolean.FALSE.equals(quotaFedReg.getPerUser())) {
-                restriction.setTotalGuaranteed(value);
-                restriction.setTotalLimit(value);
-              } else {
-                restriction.setUserGuaranteed(value);
-                restriction.setUserLimit(value);
-              }
-              mapForRestrictions.put(field, restriction);
+            // Skip fields when the value is null or when they belong to the ATTRIBUTES_TO_DISCARD
+            // list. They are different depending of the type of Quota.
+            if (ATTRIBUTES_TO_DISCARD.contains(fieldName) || valueObject == null) {
+              continue;
             }
 
+            // Fix casting of value (it depends on f.type).
+            // It should be verified as the restriction field are all Integers
+            Integer value = (Integer) valueObject;
+            Restrictions restriction = new Restrictions();
+            restriction.setInstanceGuaranteed(null);
+            restriction.setInstanceLimit(null);
+
+            // if mapForRestrictions already contains the fieldName key,
+            // load the related restriction
+            if (mapForRestrictions.containsKey(fieldName)) {
+              restriction = mapForRestrictions.get(fieldName);
+            }
+
+            // If the quota does not refer to perUser limits set the total* attributes
+            // otherwise set the user* attributes
+            if (Boolean.FALSE.equals(quotaFedReg.getPerUser())) {
+              restriction.setTotalGuaranteed(value);
+              restriction.setTotalLimit(value);
+            } else {
+              restriction.setUserGuaranteed(value);
+              restriction.setUserLimit(value);
+            }
+
+            // Add the restriction for a given fieldName
+            mapForRestrictions.put(fieldName, restriction);
+          }
+
+            // Add the mapForRestrictions for a given Service
             mapForTargets.put(quotaFedReg.getService(), mapForRestrictions);
           }
 
-        });
-
-        List<it.reply.orchestrator.dto.slam.Service> slamServices = new ArrayList<>();
+        // Create the listOfTargets from mapForTargets,
+        // create the slamService from listOfTargets
+        // create and fill the listOfServices from the slamServices
+        List<it.reply.orchestrator.dto.slam.Service> listOfServices = new ArrayList<>();
         mapForTargets.keySet().forEach(service -> {
           HashMap<String, Restrictions> value = mapForTargets.get(service);
-          List<Target> targets = new ArrayList<>();
+          List<Target> listOfTargets = new ArrayList<>();
           value.keySet().forEach(key -> {
             Target target = new Target(key, null, value.get(key));
-            targets.add(target);
+            listOfTargets.add(target);
           });
           it.reply.orchestrator.dto.slam.Service slamService =
               new it.reply.orchestrator.dto.slam.Service(service.getType(), service.getUid(),
-                  targets);
-          slamServices.add(slamService);
+              listOfTargets);
+              listOfServices.add(slamService);
         });
+
+        // Create a sla and fill the listOfSlas
         Sla sla = new Sla(userGroup.getUid(), projectFedReg.getProvider().getUid(),
             new SimpleDateFormat("yyyy-MM-dd").format(slaFedReg.getStartDate()),
-            new SimpleDateFormat("yyyy-MM-dd").format(slaFedReg.getEndDate()), slamServices,
+            new SimpleDateFormat("yyyy-MM-dd").format(slaFedReg.getEndDate()), listOfServices,
             slaFedReg.getUid());
         listOfSlas.add(sla);
       });

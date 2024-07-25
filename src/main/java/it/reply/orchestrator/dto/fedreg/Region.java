@@ -42,4 +42,8 @@ public class Region {
   @NotNull
   private String name;
 
+  @JsonProperty("identity_service")
+  @NotNull
+  private Service identityService;
+
 }

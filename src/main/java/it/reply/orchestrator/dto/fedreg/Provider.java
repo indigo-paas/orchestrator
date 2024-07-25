@@ -61,4 +61,8 @@ public class Provider {
   @JsonProperty("relationship")
   private AuthMethod relationship;
 
+  @JsonProperty("regions")
+  @Builder.Default
+  private List<Region> regions = new ArrayList<>();
+
 }

@@ -38,6 +38,7 @@ import it.reply.orchestrator.dto.fedreg.AuthMethod;
 import it.reply.orchestrator.dto.fedreg.Network;
 import it.reply.orchestrator.dto.fedreg.Project;
 import it.reply.orchestrator.dto.fedreg.Quota;
+import it.reply.orchestrator.dto.fedreg.Region;
 import it.reply.orchestrator.exception.service.DeploymentException;
 import it.reply.orchestrator.service.security.OAuth2TokenService;
 import java.net.MalformedURLException;
@@ -383,6 +384,9 @@ public class CmdbServiceV2Impl implements CmdbService {
 
     for (Quota quotaFedReg : project.getQuotas()) {
       String serviceType = quotaFedReg.getService().getType().replace('-', '_').toUpperCase();
+      String regionName = quotaFedReg.getService().getRegion().getName();
+      Region region = project.getProvider().getRegions().stream().filter(r -> r.getName().equals(regionName)).collect(Collectors.toList()).get(0);
+      String serviceEndpoint = region.getIdentityService().getEndpoint();
       // skip quotaFedReg if is related to resource usage or if it is specific for a user
       // or skip if the type of service is different to compute
       if (Boolean.TRUE.equals(quotaFedReg.getUsage())
@@ -394,7 +398,7 @@ public class CmdbServiceV2Impl implements CmdbService {
 
       URL url = null;
       try {
-        url = new URL(quotaFedReg.getService().getEndpoint());
+        url = new URL(serviceEndpoint);
       } catch (MalformedURLException e) {
         LOG.error(e.getMessage());
       }
@@ -429,21 +433,19 @@ public class CmdbServiceV2Impl implements CmdbService {
 
         // ricordarsi di mettere attributo=valore_attributo per ricordarsi l'ordine
         ComputeService computeService = new ComputeService(quotaFedReg.getService().getUid(),
-            quotaFedReg.getService().getName(), quotaFedReg.getService().getEndpoint(), null,
+            quotaFedReg.getService().getName(), serviceEndpoint, null,
             project.getProvider().getUid(), CloudServiceType.valueOf(serviceType),
-            project.getProvider().getIsPublic(), project.getName(),
-            quotaFedReg.getService().getRegion().getName(), url.getHost(), null, listOfImages,
-            listOfFlavors, true, idpProtocol.get(), true, supportedIdps, volumeTypes,
+            project.getProvider().getIsPublic(), project.getName(), regionName, url.getHost(), null,
+            listOfImages, listOfFlavors, true, idpProtocol.get(), true, supportedIdps, volumeTypes,
             publicNetworkName, null, privateNetworkName, privateNetworkProxyHost,
             privateNetworkProxyUser);
         mapOfCloudServices.put(quotaFedReg.getService().getUid(), computeService);
       } else {
-        CloudService cloudService =
-            new CloudService(quotaFedReg.getService().getUid(), quotaFedReg.getService().getName(),
-                quotaFedReg.getService().getEndpoint(), null, project.getProvider().getUid(),
-                CloudServiceType.valueOf(serviceType), project.getProvider().getIsPublic(),
-                project.getName(), quotaFedReg.getService().getRegion().getName(), url.getHost(),
-                null, true, idpProtocol.get(), true, supportedIdps, volumeTypes);
+        CloudService cloudService = new CloudService(quotaFedReg.getService().getUid(),
+            quotaFedReg.getService().getName(), serviceEndpoint, null,
+            project.getProvider().getUid(), CloudServiceType.valueOf(serviceType),
+            project.getProvider().getIsPublic(), project.getName(), regionName, url.getHost(), null,
+            true, idpProtocol.get(), true, supportedIdps, volumeTypes);
         mapOfCloudServices.put(quotaFedReg.getService().getUid(), cloudService);
       }
     }

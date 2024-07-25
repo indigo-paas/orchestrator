@@ -18,6 +18,8 @@
 package it.reply.orchestrator.dto.fedreg;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.ArrayList;
+import java.util.List;
 import javax.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -42,8 +44,8 @@ public class Region {
   @NotNull
   private String name;
 
-  @JsonProperty("identity_service")
-  @NotNull
-  private Service identityService;
+  @JsonProperty("identity_services")
+  @Builder.Default
+  private List<Service> identityServices = new ArrayList<>();
 
 }

@@ -386,7 +386,7 @@ public class CmdbServiceV2Impl implements CmdbService {
       String serviceType = quotaFedReg.getService().getType().replace('-', '_').toUpperCase();
       String regionName = quotaFedReg.getService().getRegion().getName();
       Region region = project.getProvider().getRegions().stream().filter(r -> r.getName().equals(regionName)).collect(Collectors.toList()).get(0);
-      String serviceEndpoint = region.getIdentityService().getEndpoint();
+      String serviceEndpoint = region.getIdentityServices().get(0).getEndpoint();
       // skip quotaFedReg if is related to resource usage or if it is specific for a user
       // or skip if the type of service is different to compute
       if (Boolean.TRUE.equals(quotaFedReg.getUsage())

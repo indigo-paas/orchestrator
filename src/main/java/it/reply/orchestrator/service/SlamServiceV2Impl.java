@@ -166,8 +166,6 @@ public class SlamServiceV2Impl implements SlamService {
               continue;
             }
 
-            // Fix casting of value (it depends on f.type).
-            // It should be verified as the restriction field are all Integers
             Integer value = (Integer) valueObject;
             Restrictions restriction = new Restrictions();
             restriction.setInstanceGuaranteed(null);

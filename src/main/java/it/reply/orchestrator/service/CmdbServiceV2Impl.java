@@ -51,18 +51,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import javax.net.ssl.SSLContext;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.RequestEntity.HeadersBuilder;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -124,7 +119,15 @@ public class CmdbServiceV2Impl implements CmdbService {
 
   private RestTemplate restTemplate;
 
-  public CmdbServiceV2Impl(CmdbProperties cmdbProperties, OAuth2TokenService oauth2TokenService, RestTemplateBuilder restTemplateBuilder) {
+  /**
+   * Costrcutor of the CmdbServiceV2Impl class.
+   *
+   * @param cmdbProperties contains cmdb properties
+   * @param oauth2TokenService the service used to handle tokens
+   * @param restTemplateBuilder the builder for restTemplate
+   */
+  public CmdbServiceV2Impl(CmdbProperties cmdbProperties, OAuth2TokenService oauth2TokenService,
+      RestTemplateBuilder restTemplateBuilder) {
     this.cmdbProperties = cmdbProperties;
     this.restTemplate = restTemplateBuilder.build();
     this.oauth2TokenService = oauth2TokenService;
@@ -370,9 +373,9 @@ public class CmdbServiceV2Impl implements CmdbService {
     String privateNetworkProxyHost = null;
     String privateNetworkProxyUser = null;
 
-    for (Network network: project.getNetworks()){
-      if (network.getIsDefault()){
-        if (network.getIsShared()){
+    for (Network network : project.getNetworks()) {
+      if (Boolean.TRUE.equals(network.getIsDefault())) {
+        if (Boolean.TRUE.equals(network.getIsShared())) {
           publicNetworkName = network.getName();
         } else {
           privateNetworkName = network.getName();
@@ -383,19 +386,18 @@ public class CmdbServiceV2Impl implements CmdbService {
     }
 
     for (Quota quotaFedReg : project.getQuotas()) {
-      String serviceType = quotaFedReg.getService().getType().replace('-', '_').toUpperCase();
-      String regionName = quotaFedReg.getService().getRegion().getName();
-      Region region = project.getProvider().getRegions().stream().filter(r -> r.getName().equals(regionName)).collect(Collectors.toList()).get(0);
-      String serviceEndpoint = region.getIdentityServices().get(0).getEndpoint();
-      // skip quotaFedReg if is related to resource usage or if it is specific for a user
-      // or skip if the type of service is different to compute
+
+      // skip quotaFedReg if it is related to resource usage or if it is specific for a user
       if (Boolean.TRUE.equals(quotaFedReg.getUsage())
           || Boolean.TRUE.equals(quotaFedReg.getPerUser())) {
-        // !CloudServiceType.valueOf(serviceType).equals(CloudServiceType.COMPUTE)
-        // toString().equals("COMPUTE")
         continue;
       }
 
+      String serviceType = quotaFedReg.getService().getType().replace('-', '_').toUpperCase();
+      String regionName = quotaFedReg.getService().getRegion().getName();
+      Region region = project.getProvider().getRegions().stream()
+          .filter(r -> r.getName().equals(regionName)).collect(Collectors.toList()).get(0);
+      String serviceEndpoint = region.getIdentityServices().get(0).getEndpoint();
       URL url = null;
       try {
         url = new URL(serviceEndpoint);
@@ -403,16 +405,7 @@ public class CmdbServiceV2Impl implements CmdbService {
         LOG.error(e.getMessage());
       }
 
-      // CloudService cloudService =
-      // new CloudService(quotaFedReg.getService().getUid(), quotaFedReg.getService().getName(),
-      // quotaFedReg.getService().getEndpoint(), null, project.getProvider().getUid(),
-      // CloudServiceType
-      // .valueOf(quotaFedReg.getService().getType().replace('-', '_').toUpperCase()),
-      // project.getProvider().getIsPublic(), project.getUid(),
-      // quotaFedReg.getService().getRegion().getUid(), url.getHost(), null, true,
-      // idpProtocol.get(), true, supportedIdps, volumeTypes);
-
-      // ComputeService computeService = new ComputeService
+      // If the service is of type COMPUTE creates a ComputeService otherwise create a CloudService
       if (CloudServiceType.valueOf(serviceType).equals(CloudServiceType.COMPUTE)) {
         List<Image> listOfImages = new ArrayList<>();
         List<Flavor> listOfFlavors = new ArrayList<>();
@@ -431,7 +424,6 @@ public class CmdbServiceV2Impl implements CmdbService {
           listOfFlavors.add(flavor);
         });
 
-        // ricordarsi di mettere attributo=valore_attributo per ricordarsi l'ordine
         ComputeService computeService = new ComputeService(quotaFedReg.getService().getUid(),
             quotaFedReg.getService().getName(), serviceEndpoint, null,
             project.getProvider().getUid(), CloudServiceType.valueOf(serviceType),
@@ -450,30 +442,21 @@ public class CmdbServiceV2Impl implements CmdbService {
       }
     }
 
-    CloudProvider cloudProvider = new CloudProvider(project.getProvider().getUid(),
-        project.getProvider().getName(), mapOfCloudServices);
-    return cloudProvider;
+    return new CloudProvider(project.getProvider().getUid(), project.getProvider().getName(),
+        mapOfCloudServices);
   }
 
   @Override
-  public CloudProvider fillCloudProviderInfo(String providerId,
-      Set<String> servicesWithSla, String organisation, RankCloudProvidersMessage rankCloudProvidersMessage) {
+  public CloudProvider fillCloudProviderInfo(String providerId, Set<String> servicesWithSla,
+      String organisation, RankCloudProvidersMessage rankCloudProvidersMessage) {
 
     OidcTokenId requestedWithToken = rankCloudProvidersMessage.getRequestedWithToken();
-
-    SSLContext sslContext = null;
-
-    CloseableHttpClient httpClient = HttpClients.custom().setSSLContext(sslContext)
-        .setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE).build();
-
-    HttpComponentsClientHttpRequestFactory factory =
-        new HttpComponentsClientHttpRequestFactory(httpClient);
-    RestTemplate restTemplate = new RestTemplate(factory);
 
     URI requestUriFedRegProject = UriComponentsBuilder
         .fromHttpUrl(cmdbProperties.getUrl() + cmdbProperties.getTenantsListPath())
         .queryParam("with_conn", true)
-        .queryParam("user_group_uid", rankCloudProvidersMessage.getSlamPreferences().getPreferences().get(0).getCustomer())
+        .queryParam("user_group_uid",
+            rankCloudProvidersMessage.getSlamPreferences().getPreferences().get(0).getCustomer())
         .queryParam("provider_uid", providerId).build().normalize().toUri();
 
     List<Project> projectCall =

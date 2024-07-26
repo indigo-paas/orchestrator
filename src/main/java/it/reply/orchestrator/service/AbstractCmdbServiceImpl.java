@@ -38,8 +38,8 @@ import lombok.extern.slf4j.Slf4j;
 public abstract class AbstractCmdbServiceImpl implements CmdbService {
 
   @Override
-  public CloudProvider fillCloudProviderInfo(String providerId,
-      Set<String> servicesWithSla, String organisation, RankCloudProvidersMessage rankCloudProvidersMessage) {
+  public CloudProvider fillCloudProviderInfo(String providerId, Set<String> servicesWithSla,
+      String organisation, RankCloudProvidersMessage rankCloudProvidersMessage) {
     // Get provider's data
     CloudProvider provider = getProviderById(providerId);
     Map<String, CloudService> services = getServicesByProvider(providerId)

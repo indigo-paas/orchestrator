@@ -56,8 +56,8 @@ public class GetCmdbDataUpdate extends BaseDeployCommand {
     //    deploymentMessage.getRequestedWithToken());
     String organisation = Optional.ofNullable(deployment.getUserGroup())
            .orElse(oauth2TokenService.getOrganization(deploymentMessage.getRequestedWithToken()));
-    CloudProvider cloudProvider = cmdbService
-        .fillCloudProviderInfo(cloudProviderId, serviceWithSla, organisation, new RankCloudProvidersMessage());
+    CloudProvider cloudProvider = cmdbService.fillCloudProviderInfo(cloudProviderId, serviceWithSla,
+        organisation, new RankCloudProvidersMessage());
 
     CloudServicesOrderedIterator cloudServicesOrderedIterator =
         new CloudServicesOrderedIterator(cloudProvider.getServices().values().stream().map(

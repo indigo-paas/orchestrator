@@ -127,8 +127,8 @@ public class SlamServiceV2Impl implements SlamService {
   private List<Sla> remapAttributesForSla(UserGroup userGroup) {
     List<Sla> listOfSlas = new ArrayList<>();
     userGroup.getSlas().forEach(slaFedReg -> {
-      HashMap<it.reply.orchestrator.dto.fedreg.Service, HashMap<String, Restrictions>> mapForTargets =
-            new HashMap<>();
+      HashMap<it.reply.orchestrator.dto.fedreg.Service, HashMap<String, Restrictions>>
+          mapForTargets = new HashMap<>();
       slaFedReg.getProjects().forEach(projectFedReg -> {
         // could go outside this loop
 
@@ -191,9 +191,9 @@ public class SlamServiceV2Impl implements SlamService {
             mapForRestrictions.put(fieldName, restriction);
           }
 
-            // Add the mapForRestrictions for a given Service
-            mapForTargets.put(quotaFedReg.getService(), mapForRestrictions);
-          }
+          // Add the mapForRestrictions for a given Service
+          mapForTargets.put(quotaFedReg.getService(), mapForRestrictions);
+        }
 
         // Create the listOfTargets from mapForTargets,
         // create the slamService from listOfTargets
@@ -208,8 +208,8 @@ public class SlamServiceV2Impl implements SlamService {
           });
           it.reply.orchestrator.dto.slam.Service slamService =
               new it.reply.orchestrator.dto.slam.Service(service.getType(), service.getUid(),
-              listOfTargets);
-              listOfServices.add(slamService);
+                  listOfTargets);
+          listOfServices.add(slamService);
         });
 
         // Create a sla and fill the listOfSlas

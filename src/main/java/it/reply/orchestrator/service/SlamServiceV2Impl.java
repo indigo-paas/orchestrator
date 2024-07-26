@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
@@ -51,6 +52,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
+@Slf4j
 @ServiceVersion("v2")
 public class SlamServiceV2Impl implements SlamService {
 
@@ -155,7 +157,7 @@ public class SlamServiceV2Impl implements SlamService {
               valueObject = f.get(quotaFedReg);
             } catch (IllegalArgumentException | IllegalAccessException e) {
               valueObject = null;
-              e.printStackTrace();
+              LOG.error(e.getMessage());
             }
 
             // Skip fields when the value is null or when they belong to the ATTRIBUTES_TO_DISCARD

@@ -292,6 +292,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
     for (Resource resource : resources.get(false)) {
       if (resource.getToscaNodeType().equals(IAM_TOSCA_NODE_TYPE)) {
         String nodeName = resource.getToscaNodeName();
+        LOG.info("Found node of type: {}. Node name: {}", IAM_TOSCA_NODE_TYPE, nodeName);
 
         // If resource metadata is not empty means that the IAM client is already created.
         // If it is, fill iamTemplateOutput with resource metadata info, then continue to next
@@ -303,7 +304,6 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
           continue;
         }
 
-        LOG.info("Found node of type: {}. Node name: {}", IAM_TOSCA_NODE_TYPE, nodeName);
         String scopes;
         String issuerNode;
         String tokenCredentials = null;
@@ -429,6 +429,8 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
       // Manage creation of an S3 bucket
       if (resource.getToscaNodeType().equals(toscaService.getS3ToscaNodeType())) {
         String nodeName = resource.getToscaNodeName();
+        LOG.info("Found node of type: {}. Node name: {}", toscaService.getS3ToscaNodeType(),
+            nodeName);
 
         // If resource metadata is not empty means that the S3 bucket is already created.
         // If it is, fill s3TemplateOutput with resource metadata info, then continue to next
@@ -446,8 +448,6 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
         String s3Url = null;
         String enableVersioning = null;
         Map<String, String> resourceMetadata = new HashMap<>();
-        LOG.info("Found node of type: {}. Node name: {}", toscaService.getS3ToscaNodeType(),
-            nodeName);
 
         if (s3TemplateInput == null) {
           s3TemplateInput = toscaService.getS3Properties(ar);

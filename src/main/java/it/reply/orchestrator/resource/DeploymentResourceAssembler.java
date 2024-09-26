@@ -81,6 +81,7 @@ public class DeploymentResourceAssembler
         .statusReason(entity.getStatusReason())
         .cloudProviderName(entity.getCloudProviderName())
         .cloudProviderEndpoint(getCloudProviderEndpointResource(entity.getCloudProviderEndpoint()))
+        .regionName(entity.getRegionName())
         .task(entity.getTask())
         .outputs(entity.getOutputs())
         .callback(entity.getCallback())

@@ -119,6 +119,9 @@ public class Deployment extends AbstractResourceEntity {
   @Nullable
   private String cloudProviderName;
 
+  @Nullable
+  private String regionName;
+
   @OneToMany(cascade = CascadeType.ALL, mappedBy = "deployment", orphanRemoval = true)
   private Set<WorkflowReference> workflowReferences = new HashSet<>();
 

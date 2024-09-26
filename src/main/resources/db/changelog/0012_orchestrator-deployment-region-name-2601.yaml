@@ -1,0 +1,13 @@
+databaseChangeLog:
+- changeSet:
+    id: 0012_orchestrator-deployment-region-name-2601
+    author: gsavares
+    comment: >
+      Add field region_name to table deployment to store region name info
+    changes:
+    - addColumn:
+        columns:
+        - column:
+            name: region_name
+            type: VARCHAR(128)
+        tableName: deployment

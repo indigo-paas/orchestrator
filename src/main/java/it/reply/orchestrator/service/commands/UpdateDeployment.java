@@ -102,6 +102,7 @@ public class UpdateDeployment extends BaseDeployCommand {
     // Update Deployment
     if (!isUpdate) {
       deployment.setCloudProviderName(currentCloudService.getProviderId());
+      deployment.setRegionName(currentCloudService.getRegion());
     }
     // FIXME Set/update all required selected CP data
 

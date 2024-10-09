@@ -510,6 +510,10 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
 
     ObjectNode logData = objectMapper.createObjectNode();
     logData.put("uuid", uuid);
+    logData.put("deployment_type",
+        (ar.getArchive().getTags() != null && !ar.getArchive().getTags().isEmpty())
+            ? ar.getArchive().getTags().get(0).getValue()
+            : null);
     logData.put("provider_name", deployment.getCloudProviderName());
     logData.put("user_group", deployment.getUserGroup());
 

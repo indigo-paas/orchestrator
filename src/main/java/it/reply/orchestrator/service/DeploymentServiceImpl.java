@@ -251,8 +251,10 @@ public class DeploymentServiceImpl implements DeploymentService {
     try {
       Map<String, Object> templateMap = yamlReader.readValue(request.getTemplate(), Map.class);
       ObjectNode mergedJson = objectMapper.createObjectNode();
-      mergedJson.putPOJO("Creating deployment with template", templateMap);
-      mergedJson.putPOJO("Parameters requested by the user", request.getParameters());
+      mergedJson.putPOJO("template", templateMap);
+      mergedJson.putPOJO("user_parameters", request.getParameters());
+      mergedJson.putPOJO("uuid", deployment.getId());
+      mergedJson.putPOJO("user_group", request.getUserGroup());
       //objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
       String mergedString = objectMapper.writeValueAsString(mergedJson);
       LOG.info(mergedString);

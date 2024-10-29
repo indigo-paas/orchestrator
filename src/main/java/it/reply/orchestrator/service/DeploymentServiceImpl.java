@@ -255,7 +255,6 @@ public class DeploymentServiceImpl implements DeploymentService {
       mergedJson.putPOJO("user_parameters", request.getParameters());
       mergedJson.putPOJO("uuid", deployment.getId());
       mergedJson.putPOJO("user_group", request.getUserGroup());
-      //objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
       String mergedString = objectMapper.writeValueAsString(mergedJson);
       LOG.info(mergedString);
     } catch (IOException e) {

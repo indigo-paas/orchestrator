@@ -45,7 +45,6 @@ public abstract class BaseJavaDelegate implements JavaDelegate {
     String businessKey = execution.getProcessInstanceBusinessKey();
     String deploymentId = businessKey.substring(0, businessKey.indexOf(':'));
     MdcUtils.fromBusinessKey(businessKey);
-    ObjectMapper objectMapper = new ObjectMapper();
     ObjectNode logData = objectMapper.createObjectNode();
 
     String taskName = Optional

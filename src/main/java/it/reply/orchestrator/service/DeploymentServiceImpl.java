@@ -20,7 +20,6 @@ package it.reply.orchestrator.service;
 import alien4cloud.tosca.model.ArchiveRoot;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import it.reply.orchestrator.config.properties.OidcProperties;
 import it.reply.orchestrator.dal.entity.Deployment;
 import it.reply.orchestrator.dal.entity.OidcEntity;
@@ -85,8 +84,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class DeploymentServiceImpl implements DeploymentService {
 
   private static final Pattern OWNER_PATTERN = Pattern.compile("([^@]+)@([^@]+)");
-
-  private ObjectMapper yamlReader = new ObjectMapper(new YAMLFactory());
 
   @Autowired
   private DeploymentRepository deploymentRepository;
@@ -249,12 +246,10 @@ public class DeploymentServiceImpl implements DeploymentService {
     // Print the submitted template and the parameters requested by the user for the deployment
     LOG.info("Creating deployment with template\n{}", request.getTemplate());
     try {
-      Map<String, Object> templateMap = yamlReader.readValue(request.getTemplate(), Map.class);
       ObjectNode mergedJson = objectMapper.createObjectNode();
-      mergedJson.putPOJO("template", templateMap);
-      mergedJson.putPOJO("user_parameters", request.getParameters());
       mergedJson.putPOJO("uuid", deployment.getId());
       mergedJson.putPOJO("user_group", request.getUserGroup());
+      mergedJson.putPOJO("user_parameters", request.getParameters());
       String mergedString = objectMapper.writeValueAsString(mergedJson);
       LOG.info(mergedString);
     } catch (IOException e) {

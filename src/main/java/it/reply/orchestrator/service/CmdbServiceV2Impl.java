@@ -19,6 +19,7 @@ package it.reply.orchestrator.service;
 
 import it.reply.orchestrator.annotation.ServiceVersion;
 import it.reply.orchestrator.config.properties.CmdbProperties;
+import it.reply.orchestrator.dal.entity.Deployment;
 import it.reply.orchestrator.dal.entity.OidcTokenId;
 import it.reply.orchestrator.dto.RankCloudProvidersMessage;
 import it.reply.orchestrator.dto.cmdb.CloudProvider;
@@ -39,6 +40,7 @@ import it.reply.orchestrator.dto.fedreg.Network;
 import it.reply.orchestrator.dto.fedreg.Project;
 import it.reply.orchestrator.dto.fedreg.Quota;
 import it.reply.orchestrator.dto.fedreg.Region;
+import it.reply.orchestrator.dto.slam.SlamPreferences;
 import it.reply.orchestrator.exception.service.DeploymentException;
 import it.reply.orchestrator.service.security.OAuth2TokenService;
 import java.net.MalformedURLException;
@@ -48,6 +50,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -449,14 +452,13 @@ public class CmdbServiceV2Impl implements CmdbService {
   @Override
   public CloudProvider fillCloudProviderInfo(String providerId, Set<String> servicesWithSla,
       String organisation, RankCloudProvidersMessage rankCloudProvidersMessage) {
-
     OidcTokenId requestedWithToken = rankCloudProvidersMessage.getRequestedWithToken();
+    String userGroup = rankCloudProvidersMessage.getSlamPreferences().getPreferences().get(0).getCustomer();
 
     URI requestUriFedRegProject = UriComponentsBuilder
         .fromHttpUrl(cmdbProperties.getUrl() + cmdbProperties.getTenantsListPath())
         .queryParam("with_conn", true)
-        .queryParam("user_group_uid",
-            rankCloudProvidersMessage.getSlamPreferences().getPreferences().get(0).getCustomer())
+        .queryParam("user_group_uid", userGroup)
         .queryParam("provider_uid", providerId).build().normalize().toUri();
 
     List<Project> projectCall =
@@ -471,5 +473,30 @@ public class CmdbServiceV2Impl implements CmdbService {
 
     return remapAttributes(projectCall.get(0));
   }
+
+  @Override
+  public CloudProvider getUpdatedCloudProviderInfo(Deployment deployment, String organisation, RankCloudProvidersMessage rankCloudProvidersMessage) {
+    OidcTokenId requestedWithToken = rankCloudProvidersMessage.getRequestedWithToken();
+    Optional<String> regionName = deployment.getCloudProviderEndpoint().getRegion();
+    String identityServiceEndpoint = deployment.getCloudProviderEndpoint().getCpEndpoint();
+
+    URI requestUriFedRegProject = UriComponentsBuilder
+    .fromHttpUrl(cmdbProperties.getUrl() + cmdbProperties.getTenantsListPath())
+    .queryParam("with_conn", true)
+    .queryParam("region_name", regionName)
+    .queryParam("identity_service_endpoint", identityServiceEndpoint).build().normalize().toUri();
+    
+    List<Project> projectCall =
+        oauth2TokenService.executeWithClientForResult(requestedWithToken, accessToken -> {
+          HeadersBuilder<?> requestBuilder = RequestEntity.get(requestUriFedRegProject);
+          if (accessToken != null) {
+            requestBuilder.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+          }
+          return restTemplate.exchange(requestBuilder.build(),
+              new ParameterizedTypeReference<List<Project>>() {});
+        }, OAuth2TokenService.restTemplateTokenRefreshEvaluator).getBody();
+
+    return remapAttributes(projectCall.get(0));
+  };
 
 }

@@ -17,6 +17,7 @@
 
 package it.reply.orchestrator.service;
 
+import it.reply.orchestrator.dal.entity.Deployment;
 import it.reply.orchestrator.dto.RankCloudProvidersMessage;
 import it.reply.orchestrator.dto.cmdb.CloudProvider;
 import it.reply.orchestrator.dto.cmdb.CloudService;
@@ -50,5 +51,7 @@ public interface CmdbService {
 
   public CloudProvider fillCloudProviderInfo(String providerId, Set<String> servicesWithSla,
       String organisation, RankCloudProvidersMessage rankCloudProvidersMessage);
+  
+  public CloudProvider getUpdatedCloudProviderInfo(Deployment deployment, String organisation, RankCloudProvidersMessage rankCloudProvidersMessage);
 
 }

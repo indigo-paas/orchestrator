@@ -17,6 +17,8 @@
 
 package it.reply.orchestrator.service;
 
+import it.reply.orchestrator.dal.entity.Deployment;
+import it.reply.orchestrator.dto.CloudProviderEndpoint;
 import it.reply.orchestrator.dto.RankCloudProvidersMessage;
 import it.reply.orchestrator.dto.cmdb.CloudProvider;
 import it.reply.orchestrator.dto.cmdb.CloudService;
@@ -32,6 +34,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import com.google.common.collect.Sets;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -85,4 +90,12 @@ public abstract class AbstractCmdbServiceImpl implements CmdbService {
     provider.setServices(services);
     return provider;
   }
+
+  @Override
+  public CloudProvider getUpdatedCloudProviderInfo(Deployment deployment, String organisation, RankCloudProvidersMessage rankCloudProvidersMessage) {
+    String cloudProviderId = deployment.getCloudProviderName();
+    CloudProviderEndpoint cloudProviderEndpoint = deployment.getCloudProviderEndpoint();
+    Set<String> servicesWithSla = Sets.newHashSet(cloudProviderEndpoint.getCpComputeServiceId());
+    return fillCloudProviderInfo(cloudProviderId, servicesWithSla, organisation, rankCloudProvidersMessage);
+  };
 }

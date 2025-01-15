@@ -17,23 +17,17 @@
 
 package it.reply.orchestrator.service.commands;
 
-import com.google.common.collect.Sets;
 import it.reply.orchestrator.dal.entity.Deployment;
-import it.reply.orchestrator.dal.entity.OidcEntity;
 import it.reply.orchestrator.dal.entity.OidcTokenId;
-import it.reply.orchestrator.dal.repository.OidcEntityRepository;
-import it.reply.orchestrator.dto.CloudProviderEndpoint;
 import it.reply.orchestrator.dto.RankCloudProvidersMessage;
 import it.reply.orchestrator.dto.cmdb.CloudProvider;
 import it.reply.orchestrator.dto.deployment.DeploymentMessage;
 import it.reply.orchestrator.dto.workflow.CloudServiceWf;
 import it.reply.orchestrator.dto.workflow.CloudServicesOrderedIterator;
-import it.reply.orchestrator.exception.service.DeploymentException;
 import it.reply.orchestrator.service.CmdbService;
 import it.reply.orchestrator.service.security.OAuth2TokenService;
 import it.reply.orchestrator.utils.WorkflowConstants;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.flowable.engine.delegate.DelegateExecution;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,15 +49,16 @@ public class GetCmdbDataUpdate extends BaseDeployCommand {
 
     OidcTokenId requestedWithToken = deploymentMessage.getRequestedWithToken();
     String organisation = Optional.ofNullable(deployment.getUserGroup())
-      .orElse(oauth2TokenService.getOrganization(requestedWithToken));
+        .orElse(oauth2TokenService.getOrganization(requestedWithToken));
     RankCloudProvidersMessage rankCloudProvidersMessage = new RankCloudProvidersMessage();
-    rankCloudProvidersMessage.setRequestedWithToken(requestedWithToken);    
-    
-    CloudProvider cloudProvider = cmdbService.getUpdatedCloudProviderInfo(deployment, organisation, rankCloudProvidersMessage);
+    rankCloudProvidersMessage.setRequestedWithToken(requestedWithToken);
+
+    CloudProvider cloudProvider = cmdbService.getUpdatedCloudProviderInfo(deployment, organisation,
+        rankCloudProvidersMessage);
 
     CloudServicesOrderedIterator cloudServicesOrderedIterator =
-        new CloudServicesOrderedIterator(cloudProvider.getServices().values().stream().map(
-            CloudServiceWf::new).collect(Collectors.toList()));
+        new CloudServicesOrderedIterator(cloudProvider.getServices().values().stream()
+            .map(CloudServiceWf::new).collect(Collectors.toList()));
     cloudServicesOrderedIterator.next();
     deploymentMessage.setCloudServicesOrderedIterator(cloudServicesOrderedIterator);
   }

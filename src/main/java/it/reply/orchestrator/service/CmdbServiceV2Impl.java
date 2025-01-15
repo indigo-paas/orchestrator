@@ -40,7 +40,6 @@ import it.reply.orchestrator.dto.fedreg.Network;
 import it.reply.orchestrator.dto.fedreg.Project;
 import it.reply.orchestrator.dto.fedreg.Quota;
 import it.reply.orchestrator.dto.fedreg.Region;
-import it.reply.orchestrator.dto.slam.SlamPreferences;
 import it.reply.orchestrator.exception.service.DeploymentException;
 import it.reply.orchestrator.service.security.OAuth2TokenService;
 import java.net.MalformedURLException;
@@ -475,17 +474,18 @@ public class CmdbServiceV2Impl implements CmdbService {
   }
 
   @Override
-  public CloudProvider getUpdatedCloudProviderInfo(Deployment deployment, String organisation, RankCloudProvidersMessage rankCloudProvidersMessage) {
+  public CloudProvider getUpdatedCloudProviderInfo(Deployment deployment, String organisation,
+      RankCloudProvidersMessage rankCloudProvidersMessage) {
     OidcTokenId requestedWithToken = rankCloudProvidersMessage.getRequestedWithToken();
     Optional<String> regionName = deployment.getCloudProviderEndpoint().getRegion();
     String identityServiceEndpoint = deployment.getCloudProviderEndpoint().getCpEndpoint();
 
     URI requestUriFedRegProject = UriComponentsBuilder
-    .fromHttpUrl(cmdbProperties.getUrl() + cmdbProperties.getTenantsListPath())
-    .queryParam("with_conn", true)
-    .queryParam("region_name", regionName)
-    .queryParam("identity_service_endpoint", identityServiceEndpoint).build().normalize().toUri();
-    
+        .fromHttpUrl(cmdbProperties.getUrl() + cmdbProperties.getTenantsListPath())
+        .queryParam("with_conn", true).queryParam("region_name", regionName)
+        .queryParam("identity_service_endpoint", identityServiceEndpoint).build().normalize()
+        .toUri();
+
     List<Project> projectCall =
         oauth2TokenService.executeWithClientForResult(requestedWithToken, accessToken -> {
           HeadersBuilder<?> requestBuilder = RequestEntity.get(requestUriFedRegProject);

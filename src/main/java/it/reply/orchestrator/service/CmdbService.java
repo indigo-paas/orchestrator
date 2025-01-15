@@ -51,7 +51,8 @@ public interface CmdbService {
 
   public CloudProvider fillCloudProviderInfo(String providerId, Set<String> servicesWithSla,
       String organisation, RankCloudProvidersMessage rankCloudProvidersMessage);
-  
-  public CloudProvider getUpdatedCloudProviderInfo(Deployment deployment, String organisation, RankCloudProvidersMessage rankCloudProvidersMessage);
+
+  public CloudProvider getUpdatedCloudProviderInfo(Deployment deployment, String organisation,
+      RankCloudProvidersMessage rankCloudProvidersMessage);
 
 }

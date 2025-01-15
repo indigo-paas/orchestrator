@@ -452,12 +452,12 @@ public class CmdbServiceV2Impl implements CmdbService {
   public CloudProvider fillCloudProviderInfo(String providerId, Set<String> servicesWithSla,
       String organisation, RankCloudProvidersMessage rankCloudProvidersMessage) {
     OidcTokenId requestedWithToken = rankCloudProvidersMessage.getRequestedWithToken();
-    String userGroup = rankCloudProvidersMessage.getSlamPreferences().getPreferences().get(0).getCustomer();
+    String userGroup =
+        rankCloudProvidersMessage.getSlamPreferences().getPreferences().get(0).getCustomer();
 
     URI requestUriFedRegProject = UriComponentsBuilder
         .fromHttpUrl(cmdbProperties.getUrl() + cmdbProperties.getTenantsListPath())
-        .queryParam("with_conn", true)
-        .queryParam("user_group_uid", userGroup)
+        .queryParam("with_conn", true).queryParam("user_group_uid", userGroup)
         .queryParam("provider_uid", providerId).build().normalize().toUri();
 
     List<Project> projectCall =
@@ -497,6 +497,5 @@ public class CmdbServiceV2Impl implements CmdbService {
         }, OAuth2TokenService.restTemplateTokenRefreshEvaluator).getBody();
 
     return remapAttributes(projectCall.get(0));
-  };
-
+  }
 }

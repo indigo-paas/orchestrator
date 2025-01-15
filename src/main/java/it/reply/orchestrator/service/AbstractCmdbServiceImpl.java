@@ -97,5 +97,5 @@ public abstract class AbstractCmdbServiceImpl implements CmdbService {
     Set<String> servicesWithSla = Sets.newHashSet(cloudProviderEndpoint.getCpComputeServiceId());
     return fillCloudProviderInfo(cloudProviderId, servicesWithSla, organisation,
         rankCloudProvidersMessage);
-  };
+  }
 }

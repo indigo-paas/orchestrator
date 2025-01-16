@@ -482,7 +482,7 @@ public class CmdbServiceV2Impl implements CmdbService {
 
     URI requestUriFedRegProject = UriComponentsBuilder
         .fromHttpUrl(cmdbProperties.getUrl() + cmdbProperties.getTenantsListPath())
-        .queryParam("with_conn", true).queryParam("region_name", regionName)
+        .queryParam("with_conn", true).queryParam("region_name", regionName.orElseGet(() -> null))
         .queryParam("identity_service_endpoint", identityServiceEndpoint).build().normalize()
         .toUri();
 

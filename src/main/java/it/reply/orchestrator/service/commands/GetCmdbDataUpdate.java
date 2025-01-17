@@ -17,10 +17,8 @@
 
 package it.reply.orchestrator.service.commands;
 
-import com.google.common.collect.Sets;
 import it.reply.orchestrator.dal.entity.Deployment;
 import it.reply.orchestrator.dal.entity.OidcTokenId;
-import it.reply.orchestrator.dto.CloudProviderEndpoint;
 import it.reply.orchestrator.dto.RankCloudProvidersMessage;
 import it.reply.orchestrator.dto.cmdb.CloudProvider;
 import it.reply.orchestrator.dto.deployment.DeploymentMessage;
@@ -30,7 +28,6 @@ import it.reply.orchestrator.service.CmdbService;
 import it.reply.orchestrator.service.security.OAuth2TokenService;
 import it.reply.orchestrator.utils.WorkflowConstants;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.flowable.engine.delegate.DelegateExecution;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,24 +44,23 @@ public class GetCmdbDataUpdate extends BaseDeployCommand {
 
   @Override
   public void execute(DelegateExecution execution, DeploymentMessage deploymentMessage) {
-    OidcTokenId requestedWithToken = deploymentMessage.getRequestedWithToken();
     Deployment deployment = getDeployment(deploymentMessage);
-    CloudProviderEndpoint cloudProviderEndpoint = deployment.getCloudProviderEndpoint();
-    String cloudProviderId = deployment.getCloudProviderName();
-    Set<String> serviceWithSla = Sets.newHashSet(cloudProviderEndpoint.getCpComputeServiceId());
-    //String organisation = oauth2TokenService.getOrganization(
-    //    deploymentMessage.getRequestedWithToken());
+    deploymentMessage.setChosenCloudProviderEndpoint(deployment.getCloudProviderEndpoint());
+
+    OidcTokenId requestedWithToken = deploymentMessage.getRequestedWithToken();
     String organisation = Optional.ofNullable(deployment.getUserGroup())
-           .orElse(oauth2TokenService.getOrganization(deploymentMessage.getRequestedWithToken()));
-    CloudProvider cloudProvider = cmdbService.fillCloudProviderInfo(cloudProviderId, serviceWithSla,
-        organisation, new RankCloudProvidersMessage());
+        .orElse(oauth2TokenService.getOrganization(requestedWithToken));
+    RankCloudProvidersMessage rankCloudProvidersMessage = new RankCloudProvidersMessage();
+    rankCloudProvidersMessage.setRequestedWithToken(requestedWithToken);
+
+    CloudProvider cloudProvider = cmdbService.getUpdatedCloudProviderInfo(deployment, organisation,
+        rankCloudProvidersMessage);
 
     CloudServicesOrderedIterator cloudServicesOrderedIterator =
-        new CloudServicesOrderedIterator(cloudProvider.getServices().values().stream().map(
-            CloudServiceWf::new).collect(Collectors.toList()));
+        new CloudServicesOrderedIterator(cloudProvider.getServices().values().stream()
+            .map(CloudServiceWf::new).collect(Collectors.toList()));
     cloudServicesOrderedIterator.next();
     deploymentMessage.setCloudServicesOrderedIterator(cloudServicesOrderedIterator);
-    deploymentMessage.setChosenCloudProviderEndpoint(cloudProviderEndpoint);
   }
 
   @Override

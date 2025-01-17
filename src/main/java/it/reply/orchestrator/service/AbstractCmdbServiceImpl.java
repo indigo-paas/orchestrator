@@ -17,6 +17,9 @@
 
 package it.reply.orchestrator.service;
 
+import com.google.common.collect.Sets;
+import it.reply.orchestrator.dal.entity.Deployment;
+import it.reply.orchestrator.dto.CloudProviderEndpoint;
 import it.reply.orchestrator.dto.RankCloudProvidersMessage;
 import it.reply.orchestrator.dto.cmdb.CloudProvider;
 import it.reply.orchestrator.dto.cmdb.CloudService;
@@ -84,5 +87,15 @@ public abstract class AbstractCmdbServiceImpl implements CmdbService {
 
     provider.setServices(services);
     return provider;
+  }
+
+  @Override
+  public CloudProvider getUpdatedCloudProviderInfo(Deployment deployment, String organisation,
+      RankCloudProvidersMessage rankCloudProvidersMessage) {
+    String cloudProviderId = deployment.getCloudProviderName();
+    CloudProviderEndpoint cloudProviderEndpoint = deployment.getCloudProviderEndpoint();
+    Set<String> servicesWithSla = Sets.newHashSet(cloudProviderEndpoint.getCpComputeServiceId());
+    return fillCloudProviderInfo(cloudProviderId, servicesWithSla, organisation,
+        rankCloudProvidersMessage);
   }
 }

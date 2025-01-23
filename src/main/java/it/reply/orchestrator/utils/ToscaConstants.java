@@ -120,6 +120,7 @@ public class ToscaConstants {
     public static class Properties {
 
       public static final String PLACEMENT_ID = "sla_id";
+      public static final String SLA_REGION = "region";
     }
   }
 }

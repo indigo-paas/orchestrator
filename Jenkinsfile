@@ -1,7 +1,7 @@
 pipeline {
 
     agent {
-        node { label 'jenkinsworker01' }
+        node { label 'jenkins-node-label-1' }
     }
 
     environment {

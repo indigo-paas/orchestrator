@@ -318,6 +318,13 @@ public class PrefilterCloudProviders extends BaseRankCloudProvidersCommand {
                     .flatMap(policy -> policy.getServicesId().stream())
                     .anyMatch(serviceId -> serviceId.equals(cloudService.getId()));
                 boolean credentialsRequired = cloudService.isCredentialsRequired();
+                // If the SLA policy has a region, the service must be in that region
+                if (serviceIsInSlaPolicy) {
+                  serviceIsInSlaPolicy = slaPlacementPolicies.get(0).getSlaRegion() == null
+                      || slaPlacementPolicies.get(0).getSlaRegion().isEmpty()
+                      || slaPlacementPolicies.get(0).getSlaRegion()
+                          .equals(cloudService.getRegion());
+                }
                 if (!serviceIsInSlaPolicy && (slaPlacementRequired || credentialsRequired)) {
                   LOG.debug(
                       "Discarded service {} of provider {} because it doesn't match SLA policies",

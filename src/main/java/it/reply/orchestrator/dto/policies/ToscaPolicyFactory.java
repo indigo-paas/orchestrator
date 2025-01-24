@@ -20,9 +20,7 @@ package it.reply.orchestrator.dto.policies;
 import it.reply.orchestrator.utils.ToscaConstants.Policies.Properties;
 import it.reply.orchestrator.utils.ToscaConstants.Policies.Types;
 import it.reply.orchestrator.utils.ToscaUtils;
-
 import lombok.experimental.UtilityClass;
-
 import org.alien4cloud.tosca.model.templates.PolicyTemplate;
 
 @UtilityClass
@@ -41,7 +39,10 @@ public class ToscaPolicyFactory {
       String slaIdProperty = ToscaUtils
           .extractScalar(policyTemplate.getProperties(), Properties.PLACEMENT_ID)
           .orElse(null);
-      return new SlaPlacementPolicy(policyTemplate.getTargets(), slaIdProperty);
+      String slaRegionProperty = ToscaUtils
+          .extractScalar(policyTemplate.getProperties(), Properties.SLA_REGION)
+          .orElse(null);
+      return new SlaPlacementPolicy(policyTemplate.getTargets(), slaIdProperty, slaRegionProperty);
     } else {
       return new GenericToscaPolicy(policyTemplate.getType(), policyTemplate.getTargets());
     }

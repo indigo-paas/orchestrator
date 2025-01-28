@@ -537,6 +537,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
             ? ar.getArchive().getTags().get(0).getValue()
             : null);
     logData.put("provider_name", deployment.getCloudProviderName());
+    logData.put("provider_region", deployment.getCloudProviderEndpoint().getRegion().orElse(null));
     logData.put("user_group", deployment.getUserGroup());
 
     // Print information about the submission of the deployment

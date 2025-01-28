@@ -18,22 +18,18 @@
 package it.reply.orchestrator.dto.policies;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import it.reply.orchestrator.utils.ToscaConstants.Policies.Types;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-
 import javax.validation.constraints.NotNull;
-
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 @Getter
 @Setter
@@ -45,6 +41,10 @@ public class SlaPlacementPolicy extends GenericToscaPolicy {
   @NonNull
   @NotNull
   private String slaId;
+
+  @Nullable
+  @JsonProperty("region")
+  private String slaRegion;
 
   @JsonProperty("services_id")
   @NonNull
@@ -71,11 +71,31 @@ public class SlaPlacementPolicy extends GenericToscaPolicy {
     servicesId = new ArrayList<>();
   }
 
+  protected SlaPlacementPolicy(
+      @NonNull String type,
+      @NonNull Set<String> targets,
+      @NonNull String slaId,
+      String slaRegion
+  ) {
+    super(type, targets);
+    this.slaId = Objects.requireNonNull(slaId);
+    servicesId = new ArrayList<>();
+    this.slaRegion = slaRegion;
+  }
+
   public SlaPlacementPolicy(
       @NonNull Set<String> targets,
       @NonNull String slaId
   ) {
     this(Types.SLA_PLACEMENT, targets, slaId);
+  }
+
+  public SlaPlacementPolicy(
+      @NonNull Set<String> targets,
+      @NonNull String slaId,
+      String slaRegion
+  ) {
+    this(Types.SLA_PLACEMENT, targets, slaId, slaRegion);
   }
 
 }

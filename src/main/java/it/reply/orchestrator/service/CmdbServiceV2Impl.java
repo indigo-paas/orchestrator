@@ -370,22 +370,6 @@ public class CmdbServiceV2Impl implements CmdbService {
         project.getSla().getUserGroup().getIdentityProvider().getEndpoint());
     supportedIdps.add(supportedIdp);
     idpProtocol.set(relationship.getProtocol());
-    String publicNetworkName = null;
-    String privateNetworkName = null;
-    String privateNetworkProxyHost = null;
-    String privateNetworkProxyUser = null;
-
-    for (Network network : project.getNetworks()) {
-      if (Boolean.TRUE.equals(network.getIsDefault())) {
-        if (Boolean.TRUE.equals(network.getIsShared())) {
-          publicNetworkName = network.getName();
-        } else {
-          privateNetworkName = network.getName();
-          privateNetworkProxyHost = network.getProxyHost();
-          privateNetworkProxyUser = network.getProxyUser();
-        }
-      }
-    }
 
     for (Quota quotaFedReg : project.getQuotas()) {
 
@@ -425,6 +409,23 @@ public class CmdbServiceV2Impl implements CmdbService {
               flavorElem.getGpuModel(), flavorElem.getInfiniband());
           listOfFlavors.add(flavor);
         });
+
+        String publicNetworkName = null;
+        String privateNetworkName = null;
+        String privateNetworkProxyHost = null;
+        String privateNetworkProxyUser = null;
+        for (Network network : project.getNetworks()) {
+          if (Boolean.TRUE.equals(network.getIsDefault())
+              && network.getService().getRegion().getName().equals(regionName)) {
+            if (Boolean.TRUE.equals(network.getIsShared())) {
+              publicNetworkName = network.getName();
+            } else {
+              privateNetworkName = network.getName();
+              privateNetworkProxyHost = network.getProxyHost();
+              privateNetworkProxyUser = network.getProxyUser();
+            }
+          }
+        }
 
         ComputeService computeService = new ComputeService(quotaFedReg.getService().getUid(),
             quotaFedReg.getService().getName(), serviceEndpoint, null,

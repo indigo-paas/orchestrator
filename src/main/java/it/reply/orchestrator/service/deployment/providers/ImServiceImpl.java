@@ -251,8 +251,17 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
     }
 
     toscaService.addElasticClusterParameters(ar, deployment.getId(), accessToken);
-    ComputeService computeService =
-        deploymentMessage.getCloudServicesOrderedIterator().currentService(ComputeService.class);
+    CloudServicesOrderedIterator csIterator = deploymentMessage.getCloudServicesOrderedIterator();
+    if (csIterator == null)
+    {
+      String errorMessage = 
+        String.format("Cannot instantiate CloudServicesOrderedIterator for deployment id %s", 
+          deploymentMessage.getDeploymentId());
+      LOG.error(errorMessage);
+      throw new IamServiceException(errorMessage);
+    }
+    ComputeService computeService = csIterator.currentService(ComputeService.class);
+
     toscaService.contextualizeAndReplaceImages(ar, computeService, DeploymentProvider.IM);
     toscaService.contextualizeAndReplaceFlavors(ar, computeService, DeploymentProvider.IM);
     toscaService.contextualizeAndReplaceVolumeTypes(ar, computeService, DeploymentProvider.IM);
@@ -698,7 +707,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
   @Override
   public void cleanFailedDeploy(DeploymentMessage deploymentMessage) {
     CloudServicesOrderedIterator iterator = deploymentMessage.getCloudServicesOrderedIterator();
-    boolean isLastProvider = !iterator.hasNext();
+    boolean isLastProvider = iterator != null ? !iterator.hasNext() : true;
     boolean isKeepLastAttempt = deploymentMessage.isKeepLastAttempt();
     LOG.info("isLastProvider: {} and isKeepLastAttempt: {}", isLastProvider, isKeepLastAttempt);
 
@@ -778,11 +787,20 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
 
     updateResources(deployment, deployment.getStatus());
 
-    boolean newResourcesOnDifferentService = !chosenCloudProviderEndpoint.getCpComputeServiceId()
-        .equals(deployment.getCloudProviderEndpoint().getCpComputeServiceId());
+    boolean newResourcesOnDifferentService = chosenCloudProviderEndpoint != null ?
+      !chosenCloudProviderEndpoint.getCpComputeServiceId() 
+        .equals(deployment.getCloudProviderEndpoint().getCpComputeServiceId()) :
+        false;
 
-    ComputeService computeService =
-        deploymentMessage.getCloudServicesOrderedIterator().firstService(ComputeService.class);
+        
+    CloudServicesOrderedIterator csIterator = deploymentMessage.getCloudServicesOrderedIterator();
+    if (csIterator == null)
+    {
+      String errorMessage = "Cannot instantiate CloudServicesOrderedIterator";
+      LOG.error(errorMessage);
+      throw new IamServiceException(errorMessage);
+    }
+    ComputeService computeService = csIterator.firstService(ComputeService.class);
 
     if (deploymentMessage.isHybrid()) {
       toscaService.setHybridUpdateDeployment(newAr, newResourcesOnDifferentService,

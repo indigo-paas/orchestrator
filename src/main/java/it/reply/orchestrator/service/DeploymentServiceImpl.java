@@ -184,18 +184,26 @@ public class DeploymentServiceImpl implements DeploymentService {
     }
   }
 
+  private boolean isOwned(Deployment deployment) {
+    boolean isOwned = true;
+    if (oidcProperties.isEnabled()) {
+      OidcEntityId requesterId = oauth2TokenService.generateOidcEntityIdFromCurrentAuth();
+      OidcEntity owner = deployment.getOwner();
+      if (owner != null && !requesterId.equals(owner.getOidcEntityId())) {
+        isOwned = false;
+      }
+    }
+    return isOwned;
+  }
+
   /**
    * Throw exception if the access to the deployment is not authorized.
    * @param  deployment the deployment object
   */
   public void throwIfNotOwned(Deployment deployment) {
-    if (oidcProperties.isEnabled()) {
-      OidcEntityId requesterId = oauth2TokenService.generateOidcEntityIdFromCurrentAuth();
-      OidcEntity owner = deployment.getOwner();
-      if (owner != null && !requesterId.equals(owner.getOidcEntityId())) {
+    if (!isAdmin() && !isOwned(deployment)){
         throw new ForbiddenException(
             "Only the owner of the deployment can perform this operation");
-      }
     }
   }
 

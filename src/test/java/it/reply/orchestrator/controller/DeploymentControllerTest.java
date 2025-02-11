@@ -228,6 +228,7 @@ public class DeploymentControllerTest {
             fieldWithPath("content[].creationTime").ignored(),
             fieldWithPath("content[].updateTime").ignored(),
             fieldWithPath("content[].status").ignored(),
+            fieldWithPath("content[].statusReason").ignored(),
             fieldWithPath("content[].outputs").ignored(), fieldWithPath("content[].task").ignored(),
             fieldWithPath("content[].callback").ignored())));
   }
@@ -302,7 +303,7 @@ public class DeploymentControllerTest {
                 fieldWithPath("uuid").ignored(), fieldWithPath("creationTime").ignored(),
                 fieldWithPath("updateTime").ignored(), fieldWithPath("status").ignored(),
                 fieldWithPath("outputs").ignored(), fieldWithPath("task").ignored(),
-                fieldWithPath("callback").ignored())));
+                fieldWithPath("statusReason").ignored(),fieldWithPath("callback").ignored())));
   }
 
   @Test
@@ -440,6 +441,7 @@ public class DeploymentControllerTest {
                 fieldWithPath("userGroup").description("The user group the deployment has been created for."),
                 fieldWithPath("status").description(
                     "The status of the deployment. (http://infn-datacloud.github.io/orchestrator/apidocs/it/reply/orchestrator/enums/Status.html)"),
+                fieldWithPath("statusReason").description("Contains error information for deployment"),
                 fieldWithPath("task").description(
                     "The current step of the deployment process. (http://infn-datacloud.github.io/orchestrator/apidocs/it/reply/orchestrator/enums/Task.html)"),
                 fieldWithPath("outputs").description("The outputs of the TOSCA document"),

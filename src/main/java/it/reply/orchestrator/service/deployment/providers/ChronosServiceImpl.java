@@ -221,8 +221,9 @@ public class ChronosServiceImpl extends AbstractMesosDeploymentService<ChronosJo
     deploymentMessage.setSkipPollInterval(true);
 
     ChronosJobsOrderedIterator topologyIterator = deploymentMessage.getChronosJobsIterator();
-    if (topologyIterator == null)
+    if (topologyIterator == null) {
       return false;
+    }
     if (!topologyIterator.hasCurrent() && topologyIterator.hasNext()) {
       topologyIterator.next(); // first job
     }
@@ -508,7 +509,7 @@ public class ChronosServiceImpl extends AbstractMesosDeploymentService<ChronosJo
     List<IndigoJob> indigoJobs = new ArrayList<>();
     ChronosServiceProperties chronosProperties = null;
     if (csIterator != null) {
-       chronosProperties = csIterator
+      chronosProperties = csIterator
         .currentService(ChronosService.class)
         .getProperties();
     }
@@ -537,7 +538,8 @@ public class ChronosServiceImpl extends AbstractMesosDeploymentService<ChronosJo
             + ">: 'schedule' parameter and job depencency are both specified");
       }
       Job chronosJob = generateExternalTaskRepresentation(mesosTask);
-      String hostPath = chronosProperties != null ? chronosProperties.generateLocalVolumesHostPath(id) : null;
+      String hostPath = chronosProperties != null 
+        ? chronosProperties.generateLocalVolumesHostPath(id) : null;
       CommonUtils
           .nullableCollectionToStream(chronosJob.getContainer().getVolumes())
           .forEach(volume -> {

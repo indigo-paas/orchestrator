@@ -36,7 +36,7 @@ public class CleanFailedUpdate extends BaseDeployCommand {
 
   @Override
   public void execute(DelegateExecution execution, DeploymentMessage deploymentMessage) {
-     CloudServicesOrderedIterator csIterartor = deploymentMessage.getCloudServicesOrderedIterator();
+    CloudServicesOrderedIterator csIterartor = deploymentMessage.getCloudServicesOrderedIterator();
     if (csIterartor != null) {
       CloudServiceWf cloudServiceWf = csIterartor.current();
       if (cloudServiceWf.getLastErrorCause() == null) {

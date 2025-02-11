@@ -201,9 +201,9 @@ public class DeploymentServiceImpl implements DeploymentService {
    * @param  deployment the deployment object
   */
   public void throwIfNotOwned(Deployment deployment) {
-    if (!isAdmin() && !isOwned(deployment)){
-        throw new ForbiddenException(
-            "Only the owner of the deployment can perform this operation");
+    if (!isAdmin() && !isOwned(deployment)) {
+      throw new ForbiddenException(
+        "Only the owner of the deployment can perform this operation");
     }
   }
 

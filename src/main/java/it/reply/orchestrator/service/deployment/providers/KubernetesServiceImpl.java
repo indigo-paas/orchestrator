@@ -42,8 +42,8 @@ import it.reply.orchestrator.dto.kubernetes.fluxcd.V1HelmReleaseSpec;
 import it.reply.orchestrator.dto.kubernetes.fluxcd.V1HelmReleaseSpecChart;
 import it.reply.orchestrator.dto.kubernetes.fluxcd.V1HelmReleaseSpecRollback;
 import it.reply.orchestrator.dto.kubernetes.fluxcd.V1HelmReleaseStatus;
-import it.reply.orchestrator.dto.kubernetes.fluxcd.V1HelmReleaseStatusConditions;
 import it.reply.orchestrator.dto.kubernetes.fluxcd.V1HelmReleaseStatus.PhaseEnum;
+import it.reply.orchestrator.dto.kubernetes.fluxcd.V1HelmReleaseStatusConditions;
 import it.reply.orchestrator.dto.workflow.CloudServicesOrderedIterator;
 import it.reply.orchestrator.enums.DeploymentProvider;
 import it.reply.orchestrator.enums.Task;
@@ -465,24 +465,23 @@ public class KubernetesServiceImpl extends AbstractDeploymentProviderService {
       try {
         V1ServiceList services = this.executeWithCoreClientForResult(chosenCloudProviderEndpoint,
             requestedWithToken, client -> client
-                .listNamespacedService(namespace, null, null, null, null, labelSelector, null, null,
-                    null, null));
+                .listNamespacedService(namespace, null, null, null, 
+                    null, labelSelector, null, null, null, null));
         services.getItems().forEach(service -> {
           V1ObjectMeta meta = service.getMetadata();
           String sname = meta != null ? meta.getName() : null;
           if (sname != null) {
             String serviceName = sname.split(name + "-")[1];
             Optional
-              .ofNullable(service.getSpec())
-              .map(V1ServiceSpec::getPorts)
-              .orElseGet(Collections::emptyList)
-              .forEach(portSpec -> {
-                String portName = portSpec.getName();
-                Optional
-                    .ofNullable(portSpec.getNodePort())
-                    .ifPresent(target -> runtimeProperties
-                        .put(target, chartNodeName, "service_ports", serviceName,
-                            portName, "target"));
+                .ofNullable(service.getSpec())
+                .map(V1ServiceSpec::getPorts)
+                .orElseGet(Collections::emptyList)
+                .forEach(portSpec -> {
+                  String portName = portSpec.getName();
+                  Optional
+                      .ofNullable(portSpec.getNodePort())
+                      .ifPresent(target -> runtimeProperties
+                        .put(target, chartNodeName, "service_ports", serviceName, portName, "target"));
                 Optional
                     .ofNullable(portSpec.getPort())
                     .ifPresent(source -> runtimeProperties

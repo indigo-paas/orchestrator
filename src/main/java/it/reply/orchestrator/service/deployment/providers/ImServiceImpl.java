@@ -252,8 +252,7 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
 
     toscaService.addElasticClusterParameters(ar, deployment.getId(), accessToken);
     CloudServicesOrderedIterator csIterator = deploymentMessage.getCloudServicesOrderedIterator();
-    if (csIterator == null)
-    {
+    if (csIterator == null) {
       String errorMessage = 
         String.format("Cannot instantiate CloudServicesOrderedIterator for deployment id %s", 
           deploymentMessage.getDeploymentId());
@@ -787,15 +786,12 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
 
     updateResources(deployment, deployment.getStatus());
 
-    boolean newResourcesOnDifferentService = chosenCloudProviderEndpoint != null ?
-      !chosenCloudProviderEndpoint.getCpComputeServiceId() 
-        .equals(deployment.getCloudProviderEndpoint().getCpComputeServiceId()) :
-        false;
-
+    boolean newResourcesOnDifferentService = chosenCloudProviderEndpoint != null 
+      ? !chosenCloudProviderEndpoint.getCpComputeServiceId() 
+        .equals(deployment.getCloudProviderEndpoint().getCpComputeServiceId()) : false;
         
     CloudServicesOrderedIterator csIterator = deploymentMessage.getCloudServicesOrderedIterator();
-    if (csIterator == null)
-    {
+    if (csIterator == null) {
       String errorMessage = "Cannot instantiate CloudServicesOrderedIterator";
       LOG.error(errorMessage);
       throw new IamServiceException(errorMessage);

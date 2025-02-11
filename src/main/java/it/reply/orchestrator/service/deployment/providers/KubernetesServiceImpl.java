@@ -494,7 +494,7 @@ public class KubernetesServiceImpl extends AbstractDeploymentProviderService {
                       .ifPresent(protocol -> runtimeProperties
                           .put(protocol, chartNodeName, "service_ports", serviceName,
                               portName, "protocol"));
-              });
+                });
           }
         });
 

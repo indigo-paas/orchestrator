@@ -539,7 +539,7 @@ public class ChronosServiceImpl extends AbstractMesosDeploymentService<ChronosJo
       }
       Job chronosJob = generateExternalTaskRepresentation(mesosTask);
       String hostPath = chronosProperties != null 
-        ? chronosProperties.generateLocalVolumesHostPath(id) : null;
+          ? chronosProperties.generateLocalVolumesHostPath(id) : null;
       CommonUtils
           .nullableCollectionToStream(chronosJob.getContainer().getVolumes())
           .forEach(volume -> {

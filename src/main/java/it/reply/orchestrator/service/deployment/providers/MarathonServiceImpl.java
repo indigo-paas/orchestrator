@@ -243,8 +243,8 @@ public class MarathonServiceImpl extends AbstractMesosDeploymentService<Marathon
         .currentService(MarathonService.class)
         .getProperties();
     }
-    String hostPath = (marathonProperties != null ? 
-      marathonProperties.generateLocalVolumesHostPath(groupId) : null);
+    String hostPath = (marathonProperties != null 
+        ? marathonProperties.generateLocalVolumesHostPath(groupId) : null);
     CommonUtils
         .nullableCollectionToStream(group.getApps())
         .filter(Objects::nonNull)
@@ -681,8 +681,8 @@ public class MarathonServiceImpl extends AbstractMesosDeploymentService<Marathon
           .currentService(MarathonService.class)
           .getProperties();
       }
-      List<String> balancerIPs = (marathonProperties != null ? 
-        marathonProperties.getLoadBalancerIps() : new ArrayList<String>());
+      List<String> balancerIPs = (marathonProperties != null 
+          ? marathonProperties.getLoadBalancerIps() : new ArrayList<String>());
       
       RuntimeProperties runtimeProperties = new RuntimeProperties();
       for (NodeTemplate marathonNode : orderedMarathonApps) {

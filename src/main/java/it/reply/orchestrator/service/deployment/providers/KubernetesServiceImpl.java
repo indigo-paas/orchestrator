@@ -481,18 +481,19 @@ public class KubernetesServiceImpl extends AbstractDeploymentProviderService {
                   Optional
                       .ofNullable(portSpec.getNodePort())
                       .ifPresent(target -> runtimeProperties
-                        .put(target, chartNodeName, "service_ports", serviceName, portName, "target"));
-                Optional
-                    .ofNullable(portSpec.getPort())
-                    .ifPresent(source -> runtimeProperties
-                        .put(source, chartNodeName, "service_ports", serviceName,
-                            portName, "source"));
-                Optional
-                    .ofNullable(portSpec.getProtocol())
-                    .map(String::toLowerCase)
-                    .ifPresent(protocol -> runtimeProperties
-                        .put(protocol, chartNodeName, "service_ports", serviceName,
-                            portName, "protocol"));
+                          .put(target, chartNodeName, "service_ports", serviceName, 
+                              portName, "target"));
+                  Optional
+                      .ofNullable(portSpec.getPort())
+                      .ifPresent(source -> runtimeProperties
+                          .put(source, chartNodeName, "service_ports", serviceName,
+                              portName, "source"));
+                  Optional
+                      .ofNullable(portSpec.getProtocol())
+                      .map(String::toLowerCase)
+                      .ifPresent(protocol -> runtimeProperties
+                          .put(protocol, chartNodeName, "service_ports", serviceName,
+                              portName, "protocol"));
               });
           }
         });

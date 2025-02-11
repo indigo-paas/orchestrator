@@ -254,8 +254,8 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
     CloudServicesOrderedIterator csIterator = deploymentMessage.getCloudServicesOrderedIterator();
     if (csIterator == null) {
       String errorMessage = 
-        String.format("Cannot instantiate CloudServicesOrderedIterator for deployment id %s", 
-          deploymentMessage.getDeploymentId());
+          String.format("Cannot instantiate CloudServicesOrderedIterator for deployment id %s", 
+            deploymentMessage.getDeploymentId());
       LOG.error(errorMessage);
       throw new IamServiceException(errorMessage);
     }
@@ -787,8 +787,8 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
     updateResources(deployment, deployment.getStatus());
 
     boolean newResourcesOnDifferentService = chosenCloudProviderEndpoint != null 
-      ? !chosenCloudProviderEndpoint.getCpComputeServiceId() 
-        .equals(deployment.getCloudProviderEndpoint().getCpComputeServiceId()) : false;
+        ? !chosenCloudProviderEndpoint.getCpComputeServiceId() 
+          .equals(deployment.getCloudProviderEndpoint().getCpComputeServiceId()) : false;
         
     CloudServicesOrderedIterator csIterator = deploymentMessage.getCloudServicesOrderedIterator();
     if (csIterator == null) {

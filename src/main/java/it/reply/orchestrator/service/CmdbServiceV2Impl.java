@@ -389,6 +389,8 @@ public class CmdbServiceV2Impl implements CmdbService {
         url = new URL(serviceEndpoint);
       } catch (MalformedURLException e) {
         LOG.error(e.getMessage());
+        // url cannot be null
+        continue;
       }
 
       // If the service is of type COMPUTE creates a ComputeService otherwise create a CloudService

@@ -41,7 +41,9 @@ import it.reply.orchestrator.dto.kubernetes.fluxcd.V1HelmReleaseList;
 import it.reply.orchestrator.dto.kubernetes.fluxcd.V1HelmReleaseSpec;
 import it.reply.orchestrator.dto.kubernetes.fluxcd.V1HelmReleaseSpecChart;
 import it.reply.orchestrator.dto.kubernetes.fluxcd.V1HelmReleaseSpecRollback;
+import it.reply.orchestrator.dto.kubernetes.fluxcd.V1HelmReleaseStatus;
 import it.reply.orchestrator.dto.kubernetes.fluxcd.V1HelmReleaseStatusConditions;
+import it.reply.orchestrator.dto.kubernetes.fluxcd.V1HelmReleaseStatus.PhaseEnum;
 import it.reply.orchestrator.dto.workflow.CloudServicesOrderedIterator;
 import it.reply.orchestrator.enums.DeploymentProvider;
 import it.reply.orchestrator.enums.Task;
@@ -270,12 +272,17 @@ public class KubernetesServiceImpl extends AbstractDeploymentProviderService {
     } catch (ApiException e) {
       throw new OrchestratorException("Error retrieving helm release status", e);
     }
-    if (helmRelease.getStatus() == null || helmRelease.getStatus().getPhase() == null) {
+    V1HelmReleaseStatus status = helmRelease.getStatus();
+    if (status == null || status.getPhase() == null) {
       return false;
     }
-    switch (helmRelease.getStatus().getPhase()) {
+    PhaseEnum phase =  status.getPhase();
+    if (phase == null) {
+      throw new OrchestratorException("Chart phase is null.");
+    }
+    switch (phase) {
       case SUCCEEDED:
-        return "deployed".equals(helmRelease.getStatus().getReleaseStatus());
+        return "deployed".equals(status.getReleaseStatus());
       case DEPLOYED:
       case CHARTFETCHED:
       case INSTALLING:
@@ -291,7 +298,7 @@ public class KubernetesServiceImpl extends AbstractDeploymentProviderService {
       case CHARTFETCHFAILED:
       case ROLLBACKFAILED:
         String cause = Optional
-            .ofNullable(helmRelease.getStatus().getConditions())
+            .ofNullable(status.getConditions())
             .orElseGet(Collections::emptyList)
             .stream()
             .reduce((first, second) -> second)
@@ -301,15 +308,14 @@ public class KubernetesServiceImpl extends AbstractDeploymentProviderService {
         throw new BusinessWorkflowException(WorkflowConstants.ErrorCode.CLOUD_PROVIDER_ERROR,
                 "Helm release creation or update failed" + cause);
       default:
-        throw new OrchestratorException("Unknown Chart phase: "
-                + helmRelease.getStatus().getPhase());
+        throw new OrchestratorException("Unknown Chart phase: " + phase);
     }
   }
 
   @Override
   public void cleanFailedDeploy(DeploymentMessage deploymentMessage) {
     CloudServicesOrderedIterator iterator = deploymentMessage.getCloudServicesOrderedIterator();
-    boolean isLastProvider = !iterator.hasNext();
+    boolean isLastProvider = iterator != null ? !iterator.hasNext() : true;
     boolean isKeepLastAttempt = deploymentMessage.isKeepLastAttempt();
     LOG.info("isLastProvider: {} and isKeepLastAttempt: {}", isLastProvider, isKeepLastAttempt);
 
@@ -448,9 +454,11 @@ public class KubernetesServiceImpl extends AbstractDeploymentProviderService {
           .getName();
 
       RuntimeProperties runtimeProperties = new RuntimeProperties();
-      KubernetesService kubernetesService = deploymentMessage
-          .getCloudServicesOrderedIterator()
-          .currentService(KubernetesService.class);
+      CloudServicesOrderedIterator csIterator = deploymentMessage.getCloudServicesOrderedIterator();
+      if (csIterator == null) {
+        throw new DeploymentException("CloudServicesOrderedIterator is null.");
+      }
+      KubernetesService kubernetesService = csIterator.currentService(KubernetesService.class);
 
       runtimeProperties.put(kubernetesService.getWorkerNodesIp(), chartNodeName,
           "worker_nodes_ips");
@@ -460,9 +468,11 @@ public class KubernetesServiceImpl extends AbstractDeploymentProviderService {
                 .listNamespacedService(namespace, null, null, null, null, labelSelector, null, null,
                     null, null));
         services.getItems().forEach(service -> {
-          String serviceName = service
-              .getMetadata().getName().split(name + "-")[1];
-          Optional
+          V1ObjectMeta meta = service.getMetadata();
+          String sname = meta != null ? meta.getName() : null;
+          if (sname != null) {
+            String serviceName = sname.split(name + "-")[1];
+            Optional
               .ofNullable(service.getSpec())
               .map(V1ServiceSpec::getPorts)
               .orElseGet(Collections::emptyList)
@@ -485,6 +495,7 @@ public class KubernetesServiceImpl extends AbstractDeploymentProviderService {
                         .put(protocol, chartNodeName, "service_ports", serviceName,
                             portName, "protocol"));
               });
+          }
         });
 
       } catch (ApiException e) {

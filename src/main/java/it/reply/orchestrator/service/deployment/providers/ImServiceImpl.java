@@ -66,7 +66,7 @@ import it.reply.orchestrator.service.IndigoInputsPreProcessorService.RuntimeProp
 import it.reply.orchestrator.service.S3Service;
 import it.reply.orchestrator.service.ToscaService;
 import it.reply.orchestrator.service.deployment.providers.factory.ImClientFactory;
-import it.reply.orchestrator.service.security.CustomOAuth2TemplateFactory;
+//import it.reply.orchestrator.service.security.CustomOAuth2TemplateFactory;
 import it.reply.orchestrator.service.security.OAuth2TokenService;
 import it.reply.orchestrator.utils.CommonUtils;
 import it.reply.orchestrator.utils.JwtUtils;
@@ -119,8 +119,8 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
   @Autowired
   private S3Service s3Service;
 
-  @Autowired
-  private CustomOAuth2TemplateFactory templateFactory;
+  //@Autowired
+  //private CustomOAuth2TemplateFactory templateFactory;
 
   @Autowired
   private ClientConfigurationService staticClientConfigurationService;
@@ -1148,10 +1148,10 @@ public class ImServiceImpl extends AbstractDeploymentProviderService {
 
     final OidcTokenId requestedWithToken = deploymentMessage.getRequestedWithToken();
 
-    String accessToken = null;
-    if (oidcProperties.isEnabled()) {
-      accessToken = oauth2TokenService.getAccessToken(requestedWithToken);
-    }
+    //String accessToken = null;
+    //if (oidcProperties.isEnabled()) {
+    //  accessToken = oauth2TokenService.getAccessToken(requestedWithToken);
+    //}
 
     Resource resource = resourceRepository
         .findByIdAndDeployment_id(deploymentMessage.getResourceId(),

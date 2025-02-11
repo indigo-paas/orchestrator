@@ -197,10 +197,10 @@ public class DeploymentController {
   @PreAuthorize(OFFLINE_ACCESS_REQUIRED_CONDITION)
   public void updateDeployment(@PathVariable("deploymentId") String id,
       @Valid @RequestBody DeploymentRequest request) {
-    OidcEntity owner = null;
+    //OidcEntity owner = null;
     OidcTokenId requestedWithToken = null;
     if (oidcProperties.isEnabled()) {
-      owner = oauth2Tokenservice.getOrGenerateOidcEntityFromCurrentAuth();
+      /*owner =*/ oauth2Tokenservice.getOrGenerateOidcEntityFromCurrentAuth();
       requestedWithToken = oauth2Tokenservice.exchangeCurrentAccessToken();
     }
     deploymentService.updateDeployment(id, request, requestedWithToken);
@@ -232,10 +232,10 @@ public class DeploymentController {
   @PreAuthorize(OFFLINE_ACCESS_REQUIRED_CONDITION)
   public void resetDeployment(@PathVariable("deploymentId") String id,
       @Valid @RequestBody DeploymentStatus status) {
-    OidcEntity owner = null;
+    //OidcEntity owner = null;
     OidcTokenId requestedWithToken = null;
     if (oidcProperties.isEnabled()) {
-      owner = oauth2Tokenservice.getOrGenerateOidcEntityFromCurrentAuth();
+      /*owner =*/ oauth2Tokenservice.getOrGenerateOidcEntityFromCurrentAuth();
       requestedWithToken = oauth2Tokenservice.exchangeCurrentAccessToken();
     }
     deploymentService.resetDeployment(id, status.getStatus(), requestedWithToken);
@@ -269,10 +269,10 @@ public class DeploymentController {
   @ResponseStatus(HttpStatus.OK)
   public CharSequence getDeploymentLog(@PathVariable("deploymentId") String uuid) {
     MdcUtils.setDeploymentId(uuid);
-    OidcEntity owner = null;
+    //OidcEntity owner = null;
     OidcTokenId requestedWithToken = null;
     if (oidcProperties.isEnabled()) {
-      owner = oauth2Tokenservice.getOrGenerateOidcEntityFromCurrentAuth();
+      /*owner =*/ oauth2Tokenservice.getOrGenerateOidcEntityFromCurrentAuth();
       requestedWithToken = oauth2Tokenservice.exchangeCurrentAccessToken();
     }
     return deploymentService.getDeploymentLog(uuid, requestedWithToken);
@@ -289,10 +289,10 @@ public class DeploymentController {
   @ResponseStatus(HttpStatus.OK)
   public CharSequence getDeploymentExtraInfo(@PathVariable("deploymentId") String uuid) {
     MdcUtils.setDeploymentId(uuid);
-    OidcEntity owner = null;
+    //OidcEntity owner = null;
     OidcTokenId requestedWithToken = null;
     if (oidcProperties.isEnabled()) {
-      owner = oauth2Tokenservice.getOrGenerateOidcEntityFromCurrentAuth();
+      /*owner =*/ oauth2Tokenservice.getOrGenerateOidcEntityFromCurrentAuth();
       requestedWithToken = oauth2Tokenservice.exchangeCurrentAccessToken();
     }
     return deploymentService.getDeploymentExtendedInfo(uuid, requestedWithToken);
@@ -310,10 +310,10 @@ public class DeploymentController {
   @PreAuthorize(OFFLINE_ACCESS_REQUIRED_CONDITION)
   public void deleteDeployment(@PathVariable("deploymentId") String id,
       @RequestParam(name = "force", required = false) @Nullable String force) {
-    OidcEntity owner = null;
+    //OidcEntity owner = null;
     OidcTokenId requestedWithToken = null;
     if (oidcProperties.isEnabled()) {
-      owner = oauth2Tokenservice.getOrGenerateOidcEntityFromCurrentAuth();
+      /*owner =*/ oauth2Tokenservice.getOrGenerateOidcEntityFromCurrentAuth();
       requestedWithToken = oauth2Tokenservice.exchangeCurrentAccessToken();
     }
     deploymentService.deleteDeployment(id, requestedWithToken, force);

@@ -549,7 +549,8 @@ public class DeploymentServiceImpl implements DeploymentService {
     if (log.isPresent()) {
       return log.get();
     } else {
-      return "";
+      String statusReason = deployment.getStatusReason();
+      return statusReason;
     }
   }
 

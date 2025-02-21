@@ -151,6 +151,24 @@ public class DeploymentServiceImpl implements DeploymentService {
     }
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public Deployment getDeployment(String id) {
+    Deployment deployment = null;
+    if (oidcProperties.isEnabled()) {
+      OidcEntity requester = oauth2TokenService.generateOidcEntityFromCurrentAuth();
+      deployment = deploymentRepository.findOne(requester, id);
+    } else {
+      deployment = deploymentRepository.findOne(id);
+    }
+    if (deployment != null) {
+      MdcUtils.setDeploymentId(deployment.getId());
+      return deployment;
+    } else {
+      throw new NotFoundException("The deployment <" + id + "> doesn't exist");
+    }
+  }
+
   private boolean isAdmin() {
     boolean isAdmin = false;
     if (oidcProperties.isEnabled()) {
@@ -164,24 +182,6 @@ public class DeploymentServiceImpl implements DeploymentService {
       }
     }
     return isAdmin;
-  }
-
-  @Override
-  @Transactional(readOnly = true)
-  public Deployment getDeployment(String uuid) {
-    Deployment deployment = null;
-    if (oidcProperties.isEnabled()) {
-      OidcEntity requester = oauth2TokenService.generateOidcEntityFromCurrentAuth();
-      deployment = deploymentRepository.findOne(requester, uuid);
-    } else {
-      deployment = deploymentRepository.findOne(uuid);
-    }
-    if (deployment != null) {
-      MdcUtils.setDeploymentId(deployment.getId());
-      return deployment;
-    } else {
-      throw new NotFoundException("The deployment <" + uuid + "> doesn't exist");
-    }
   }
 
   private boolean isOwned(Deployment deployment) {
@@ -334,8 +334,8 @@ public class DeploymentServiceImpl implements DeploymentService {
 
   @Override
   @Transactional
-  public void deleteDeployment(String uuid, OidcTokenId requestedWithToken, String force) {
-    Deployment deployment = getDeployment(uuid);
+  public void deleteDeployment(String id, OidcTokenId requestedWithToken, String force) {
+    Deployment deployment = getDeployment(id);
     MdcUtils.setDeploymentId(deployment.getId());
     throwIfNotOwned(deployment);
 
@@ -395,19 +395,19 @@ public class DeploymentServiceImpl implements DeploymentService {
     MdcUtils.setDeploymentId(deployment.getId());
     LOG.debug("Updating deployment with template\n{}", request.getTemplate());
     throwIfNotOwned(deployment);
-
-    if (deployment.getDeploymentProvider() == DeploymentProvider.CHRONOS
-        || deployment.getDeploymentProvider() == DeploymentProvider.MARATHON
-        || deployment.getDeploymentProvider() == DeploymentProvider.QCG) {
+    DeploymentProvider providerType = deployment.getDeploymentProvider();
+    if (providerType == DeploymentProvider.CHRONOS
+        || providerType == DeploymentProvider.MARATHON
+        || providerType == DeploymentProvider.QCG) {
       throw new BadRequestException(String.format("%s deployments cannot be updated.",
-          deployment.getDeploymentProvider().toString()));
+      providerType.toString()));
     }
-
-    if (!(deployment.getStatus() == Status.CREATE_COMPLETE
-        || deployment.getStatus() == Status.UPDATE_COMPLETE
-        || deployment.getStatus() == Status.UPDATE_FAILED)) {
+    Status deploymentStatus = deployment.getStatus();
+    if (!(deploymentStatus == Status.CREATE_COMPLETE
+        || deploymentStatus == Status.UPDATE_COMPLETE
+        || deploymentStatus == Status.UPDATE_FAILED)) {
       throw new ConflictException(String.format("Cannot update a deployment in %s state",
-          deployment.getStatus().toString()));
+        deploymentStatus.toString()));
     }
 
     deployment.setStatus(Status.UPDATE_IN_PROGRESS);
@@ -419,8 +419,7 @@ public class DeploymentServiceImpl implements DeploymentService {
     }
     deployment = deploymentRepository.save(deployment);
 
-    DeploymentType deploymentType = DeploymentService.inferDeploymentType(
-        deployment.getDeploymentProvider());
+    DeploymentType deploymentType = DeploymentService.inferDeploymentType(providerType);
 
     // Build deployment message
     DeploymentMessage deploymentMessage = buildDeploymentMessage(deployment, deploymentType,

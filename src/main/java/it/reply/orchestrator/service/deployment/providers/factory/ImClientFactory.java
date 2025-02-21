@@ -80,7 +80,9 @@ public class ImClientFactory {
         OidcEntity oidcEntity = oidcEntityRepository
                 .findByOidcEntityId(oidcEntityId)
                 .orElseThrow(
-                    () -> new DeploymentException("No user associated to deployment token found"));
+                    () -> new DeploymentException(
+                      String.format("No user associated to access token found (subject: %s)", 
+                      oidcEntityId.getSubject())));
         // Compute the Username field of the IM Authorization Header for Openstack as follows:
         // Use the name of the IDP (that matches the token issuer) as configured in CMDB, if present
         // otherwise use the organization name retrieved from the token.

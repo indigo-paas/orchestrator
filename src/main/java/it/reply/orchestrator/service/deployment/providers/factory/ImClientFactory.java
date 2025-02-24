@@ -36,11 +36,15 @@ import it.reply.orchestrator.dto.CloudProviderEndpoint.IaaSType;
 import it.reply.orchestrator.dto.cmdb.CloudService.SupportedIdp;
 import it.reply.orchestrator.dto.security.GenericServiceCredential;
 import it.reply.orchestrator.dto.security.GenericServiceCredentialWithTenant;
+import it.reply.orchestrator.dto.security.IamUserInfo;
+import it.reply.orchestrator.dto.security.IndigoOAuth2Authentication;
 import it.reply.orchestrator.exception.OrchestratorException;
 import it.reply.orchestrator.exception.service.DeploymentException;
 import it.reply.orchestrator.service.deployment.providers.CredentialProviderService;
+import it.reply.orchestrator.service.security.OAuth2TokenService;
 import it.reply.orchestrator.utils.CommonUtils;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -50,6 +54,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -68,6 +73,9 @@ public class ImClientFactory {
 
   private CredentialProviderService credProvServ;
 
+  @Autowired
+  private OAuth2TokenService oauth2TokenService;
+
   protected OpenStackCredentials getOpenStackAuthHeader(CloudProviderEndpoint cloudProviderEndpoint,
       @NonNull String accessToken) {
     String endpoint = cloudProviderEndpoint.getCpEndpoint();
@@ -76,17 +84,26 @@ public class ImClientFactory {
       throw new DeploymentException("Wrong OS endpoint format: " + endpoint);
     } else {
       if (cloudProviderEndpoint.isIamEnabled()) {
-        OidcEntityId oidcEntityId =  OidcEntityId.fromAccesToken(accessToken);
-        OidcEntity oidcEntity = oidcEntityRepository
-                .findByOidcEntityId(oidcEntityId)
-                .orElseThrow(
-                    () -> new DeploymentException(
-                      String.format("No user associated to access token found (subject: %s)", 
-                      oidcEntityId.getSubject())));
+
         // Compute the Username field of the IM Authorization Header for Openstack as follows:
         // Use the name of the IDP (that matches the token issuer) as configured in CMDB, if present
         // otherwise use the organization name retrieved from the token.
-        String organization = oidcEntity.getOrganization();
+
+        OidcEntityId oidcEntityId =  OidcEntityId.fromAccesToken(accessToken);
+        OidcEntity oidcEntity = oidcEntityRepository.findByOidcEntityId(oidcEntityId).orElse(null);
+        String organization;
+        if (oidcEntity == null) {
+          IamUserInfo userInfo = (IamUserInfo)oauth2TokenService.getCurrentAuthentication().getUserInfo();
+          if (userInfo != null) {
+             organization = Preconditions.checkNotNull(userInfo.getOrganizationName(),
+              "Organization name not found between the user info claims");
+          } else {
+            throw new OrchestratorException("Client credentials grant not supported");
+          }  
+        } else {
+          organization = oidcEntity.getOrganization();
+        }
+      
         String issuer = oidcEntityId.getIssuer();
         SupportedIdp supportedidp = cloudProviderEndpoint
                        .getSupportedIdps().stream()

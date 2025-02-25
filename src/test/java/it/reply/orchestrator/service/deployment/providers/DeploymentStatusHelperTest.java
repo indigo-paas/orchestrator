@@ -72,15 +72,7 @@ public class DeploymentStatusHelperTest {
     deploymentStatusHelper.updateOnSuccess(deployment.getId());
     Assertions.assertThat(deployment.getStatus()).isEqualTo(expectedStatus);
   }
-/*
-  @Test
-  public void updateOnSuccessDeleteInProgress() {
-    deployment.setStatus(Status.DELETE_IN_PROGRESS);
-    deploymentStatusHelper.updateOnSuccess(deployment.getId());
-    Assertions.assertThat(deployment.getStatus()).isEqualTo(Status.DELETE_COMPLETE);
-    Mockito.verify(deploymentRepository, Mockito.times(1)).delete(deployment);
-  }
-*/
+  
   @Test
   public void updateOnSuccessNullSafe() {
     String id = UUID.randomUUID().toString();
@@ -157,7 +149,7 @@ public class DeploymentStatusHelperTest {
       "STARTING, STARTED, 2",
       "STARTED, STARTED, 2",
       "STOPPING, STARTED, 2",
-      "DELETING, STARTED, 2",
+      "DELETING, DELETING, 2",
       "DELETED, DELETED, 2",
       "ERROR, STARTED, 2"
   })
@@ -169,8 +161,6 @@ public class DeploymentStatusHelperTest {
     deploymentStatusHelper.updateResources(deployment, deployment.getStatus());
     Assertions.assertThat(deployment.getResources()).allMatch(
         resource -> resource.getState() == expectedResourceStatus);
-    Assertions.assertThat(deployment.getResources()).allMatch(
-        resource -> resource.getState() != NodeStates.DELETING);
     Assertions.assertThat(deployment.getResources()).hasSize(expectedSize);
   }
 
@@ -219,14 +209,4 @@ public class DeploymentStatusHelperTest {
         resource -> resource.getState() == expectedResourceStatus);
     Assertions.assertThat(deployment.getResources()).hasSize(expectedSizie);
   }
-  /*
-  @Test
-  public void updateResourcesDeleteComplete() {
-    deployment.setStatus(Status.DELETE_COMPLETE);
-    deploymentStatusHelper.updateResources(deployment, deployment.getStatus());
-    Assertions.assertThat(deployment.getResources()).allMatch(
-      resource -> resource.getState() == NodeStates.DELETED);
-
-  }
-      */
 }

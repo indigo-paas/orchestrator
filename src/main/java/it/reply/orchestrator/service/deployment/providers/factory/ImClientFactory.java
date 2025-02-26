@@ -92,7 +92,7 @@ public class ImClientFactory {
         String organization;
         if (oidcEntity == null) {
           IamUserInfo userInfo = (IamUserInfo)oauth2TokenService.getCurrentAuthentication()
-            .getUserInfo();
+              .getUserInfo();
           if (userInfo != null) {
             organization = Preconditions.checkNotNull(userInfo.getOrganizationName(),
               "Organization name not found between the user info claims");

@@ -129,8 +129,8 @@ public class DeploymentStatusHelperImpl implements DeploymentStatusHelper {
           resource.setState(NodeStates.STARTED);
           break;
         case UPDATE_COMPLETE:
-          if (resource.getState() != NodeStates.DELETING &&
-              resource.getState() != NodeStates.DELETED) {
+          if (resource.getState() != NodeStates.DELETING
+              && resource.getState() != NodeStates.DELETED) {
             resource.setState(NodeStates.STARTED);
           }
           break;

@@ -202,7 +202,7 @@ public class DeploymentServiceTest {
     } else {
       Mockito.when(imService.getDeploymentLog(Mockito.any()))
           .thenReturn(Optional.empty());
-      assertThat(deploymentService.getDeploymentLog(deployment.getId(), null)).isEqualTo("");
+      assertThat(deploymentService.getDeploymentLog(deployment.getId(), null)).isEqualTo("deployment error");
     }
   }
 

@@ -97,7 +97,7 @@ public class ImClientFactory {
               "Organization name not found between the user info claims");
           } else {
             throw new OrchestratorException("Client credentials grant not supported");
-          }  
+          }
           //generate and save oidcEntity for new user
           oidcEntity = new OidcEntity();
           oidcEntity.setOidcEntityId(oidcEntityId);

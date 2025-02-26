@@ -538,7 +538,7 @@ public class ChronosServiceImpl extends AbstractMesosDeploymentService<ChronosJo
             + ">: 'schedule' parameter and job depencency are both specified");
       }
       Job chronosJob = generateExternalTaskRepresentation(mesosTask);
-      String hostPath = chronosProperties != null 
+      String hostPath = chronosProperties != null
           ? chronosProperties.generateLocalVolumesHostPath(id) : null;
       CommonUtils
           .nullableCollectionToStream(chronosJob.getContainer().getVolumes())

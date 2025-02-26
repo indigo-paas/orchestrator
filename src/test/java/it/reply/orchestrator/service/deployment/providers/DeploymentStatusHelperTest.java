@@ -72,7 +72,7 @@ public class DeploymentStatusHelperTest {
     deploymentStatusHelper.updateOnSuccess(deployment.getId());
     Assertions.assertThat(deployment.getStatus()).isEqualTo(expectedStatus);
   }
-  
+
   @Test
   public void updateOnSuccessNullSafe() {
     String id = UUID.randomUUID().toString();

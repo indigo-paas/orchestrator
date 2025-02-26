@@ -103,11 +103,11 @@ public class ImClientFactory {
           oidcEntity.setOidcEntityId(oidcEntityId);
           oidcEntity.setOrganization(organization);
           oidcEntityRepository.saveAndFlush(oidcEntity);
-          
+
         } else {
           organization = oidcEntity.getOrganization();
         }
-      
+
         String issuer = oidcEntityId.getIssuer();
         SupportedIdp supportedidp = cloudProviderEndpoint
                        .getSupportedIdps().stream()

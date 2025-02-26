@@ -465,7 +465,7 @@ public class KubernetesServiceImpl extends AbstractDeploymentProviderService {
       try {
         V1ServiceList services = this.executeWithCoreClientForResult(chosenCloudProviderEndpoint,
             requestedWithToken, client -> client
-                .listNamespacedService(namespace, null, null, null, 
+                .listNamespacedService(namespace, null, null, null,
                     null, labelSelector, null, null, null, null));
         services.getItems().forEach(service -> {
           V1ObjectMeta meta = service.getMetadata();
@@ -481,7 +481,7 @@ public class KubernetesServiceImpl extends AbstractDeploymentProviderService {
                   Optional
                       .ofNullable(portSpec.getNodePort())
                       .ifPresent(target -> runtimeProperties
-                          .put(target, chartNodeName, "service_ports", serviceName, 
+                          .put(target, chartNodeName, "service_ports", serviceName,
                               portName, "target"));
                   Optional
                       .ofNullable(portSpec.getPort())
